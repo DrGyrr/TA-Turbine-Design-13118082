@@ -1,0 +1,20 @@
+
+29/06/2022
+- Installed python 3.10.5 from python.org
+- tried to run 'import numpy' didn't work
+    => Installed anaconda
+- pip installed numpy
+- worked at terminal, still didn't work in text editor
+- tried to change interpreter, didn't work
+- pip installed coolprop
+- coolprop still didn't work in text editor (module not found)
+    => Found out why : maybe because the python version is newer than the one in wheel of coolprop
+    => tried to find a way to install previous version of python, no clue
+- Made some virtual environment === BEST DECISION ===
+    => But the one that works and I still use is C:\Users\User\.venvironment\TATurbineDesign
+
+- Copied given codes into a folder
+- Made new folder 'My Codes'. Make thy version of .py and.ipynb in there
+
+end
+

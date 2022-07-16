@@ -86,7 +86,7 @@ def Compute(flow_coeff,work_coeff,fluid):
     Re = C4*b4/Pr('viscosity','H',H_5*1000,'P',P_1*1e6,fluid)
 
     #Rotor Incidence
-    Beta4opt = np.arctan((-1.98/NR)/NR/(1-1.98/NR)*np.tan(np.radians(Alpha4)))*180/np.pi
+    Beta4opt = np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(np.radians(Alpha4)))*180/np.pi
     LossInc = 1e-3*0.5*(W4**2)*(np.sin(np.radians(np.abs(Beta4-Beta4opt))))**2                               #m^2/s^2
 
     #Rotor Passage

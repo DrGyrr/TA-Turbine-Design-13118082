@@ -1,0 +1,13 @@
+Polynomial functions: sigma (C*flowcoeff^m*workcoeff^n); row=m;column=n,,,,,,
+Cycle,,,,,,
+gparamset,,,,,,
+rpm,,,,,,
+ComputeR,,,,,,
+date,,,,,,
+,0,1,2,3,4,5
+0,9,8,7,6,5,54
+1,5,0,,,,
+2,4,,3,,,
+3,77,,,,3,
+4,4,,,,,2
+5,67,,,,,69

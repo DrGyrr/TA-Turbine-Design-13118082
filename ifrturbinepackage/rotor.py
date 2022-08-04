@@ -484,12 +484,39 @@ def ComputeR2(tenflow_coeff,tenwork_coeff,k,l,m):
     Efftt       = ((h01-h05)/(h01-h05ss)-Effreductbladeloading)*100
     Effts       = ((h01-h05)/(h01-h5ss)-Effreductbladeloading)*100
 
+    geomdict    = dict()
+    thermodict  = dict()
+    veltridict  = dict()
+    effdict     = dict()
+    lossdict    = dict()
+
+    for i in ('r4','r5','rs5','rh5','b4','b5','Zr','NR','tb4','tb5'):
+        geomdict[i]     = globals()[i]
+    for i in ('T_1','T_5','P_1','P_5','p04s','p04','p4s','p4','p5ss','p5','p05ss','p05','T05ss','T05','T5ss','T5','rho4s','rho5ss'):
+        thermodict[i]   = globals()[i]
+    for i in ('C4','Ct4','Cm4','W4','U4','Alpha4','Beta4','C5','Ct5','Cm5','W5','U5','Alpha5','Beta5','Beta4opt','Beta4opt2','Cm5didconverge1','Cm5didconverge2','k1Cm5','k2Cm5'):
+        veltridict[i]   = globals()[i]
+    for i in ('Reaction','Effts','Efftt'):
+        effdict[i]      = globals()[i]
+    for i in ('LossInc0','LossInc','LossPass','LossTip','LossWind','LossTE','Effreductbladeloading','LossExit'):
+        lossdict[i]     = globals()[i]
+
+    outputdict  = {
+        'geometry'  : geomdict,
+        'thermo'    : thermodict,
+        'velocity'  : veltridict,
+        'efficiency': effdict,
+        'losses'    : lossdict
+        }
+    
+    return outputdict
+
 def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
-    global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4ss,T05ss,T05,T5ss,T5
+    global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss
     global r4,r5,rs5,rh5,b4,b5,Zr,NR,tb4,tb5
     global C4,Ct4,Cm4,W4,U4,Alpha4,Beta4,C5,Ct5,Cm5,W5,U5,Alpha5,Beta5,Beta4opt,Beta4opt2
-    global Cm5didconverge1,Cm5didconverge2,k1C5,k2C5,errorC5
-    global TotalLoss,LossInc,LossPass,LossTip,LossWind,LossTE,LossExit,rho4m,S5,O5
+    global Cm5didconverge1,Cm5didconverge2,k1Cm5,k2Cm5,errorC5
+    global TotalLoss,LossInc,LossInc0,LossPass,LossTip,LossWind,LossTE,LossExit,S5,O5,Effreductbladeloading
     global Effts,Efftt,Efftspred,Reaction,vNu
 
     flow_coeff=tenflow_coeff/10
@@ -553,13 +580,13 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
     rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
     
-    # Construction underway \/ \/ \/
+    
     Ct5 = 0 # => it is predetermined that Alpha5=0
     Alpha5 = 0
     Cm5_0    = 0
-    rho5s_0= rho05ss        # => initial value for iteration
+    rho5ss_0= rho05ss        # => initial value for iteration
     Cm5ii    = Cm5_0
-    rho5ssii= rho5s_0
+    rho5ssii= rho5ss_0
     Cm5didconverge1 = False
     Cm5didconverge2 = False
     choked5     = False
@@ -644,6 +671,8 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
     a4      = Props('A','P',p4,'T',T4,fluid)
     Ma4s    = C4/a4s
     Ma4     = C4/a4
+    T5ss    = Props('T','H',h5ss,'S',s05ss,fluid)
+    p5ss    = Props('P','H',h5ss,'S',s05ss,fluid)
 
 
     Re4s    = rho4s*C4*b4/Props('V','P',p4s,'T',T4s,fluid)
@@ -701,14 +730,14 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
     LossWind = Kf*((rho4s+rho5ss)/2)*U4**3*r4**2/(2*mflow*W5**2)
 
     #Trailing Edge Losses
-    if 0.04*r4>0.001:
-        tb4 = 0.04*r4
-    else:
-        tb4 = 0.001
-    if 0.02*r4>0.001:
-        tb5 == 0.02*r4
-    else:
-        tb5 = 0.001
+    # if 0.04*r4>0.001:
+    tb4 = 0.04*r4
+    # else:
+    # tb4 = 0.001
+    # if 0.02*r4>0.001:
+    tb5 = 0.02*r4
+    # else:
+    #     tb5 = 0.001
     LossTE = rho5ss*W5**2/2*(NR*tb5/(np.pi*(rh5+rs5)*np.cos(Beta5)))**2
     
     #Exit Losses
@@ -729,20 +758,38 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
 
     #Effisiensi 
     Reaction    = (h4s-h5)/(h01-h05ss)
-    Efftt       = ((h01-h05)/(h01-h05ss)-Effreductbladeloading)*100
+    Efftt       = ((h01-h05)/(h01-h05ss)-0)*100
     Effts       = ((h01-h05)/(h01-h5ss)-Effreductbladeloading)*100
 
-    geomdict=dict()
-    thermodict=dict()
-    veltridict=dict()
+    geomdict    = dict()
+    thermodict  = dict()
+    veltridict  = dict()
+    effdict     = dict()
+    lossdict    = dict()
+    proceeddict = dict()
 
     for i in ('r4','r5','rs5','rh5','b4','b5','Zr','NR','tb4','tb5'):
         geomdict[i]     = globals()[i]
-    for i in ('T_1','T_5','P_1','P_5','p04s','p04','p4s','p4','p5ss','p5','p05ss','p05','T05ss','T05','T5ss','T5'):
+    for i in ('T_1','T_5','P_1','P_5','p04s','p04','p4s','p4','p5ss','p5','p05ss','p05','T05ss','T05','T5ss','T5','rho4s','rho5ss'):
         thermodict[i]   = globals()[i]
-    for i in ('C4','Ct4','Cm4','W4','U4','Alpha4','Beta4','C5','Ct5','Cm5','W5','U5','Alpha5','Beta5','Beta4opt','Beta4opt2v'):
+    for i in ('C4','Ct4','Cm4','W4','U4','Alpha4','Beta4','C5','Ct5','Cm5','W5','U5','Alpha5','Beta5','Beta4opt','Beta4opt2','Cm5didconverge1','Cm5didconverge2','k1Cm5','k2Cm5'):
         veltridict[i]   = globals()[i]
-    return geomdict,thermodict,veltridict
+    for i in ('Reaction','Effts','Efftt'):
+        effdict[i]      = globals()[i]
+    for i in ('LossInc0','LossInc','LossPass','LossTip','LossWind','LossTE','Effreductbladeloading','LossExit'):
+        lossdict[i]     = globals()[i]
+    for i in ('Beta4','b4','r4','Zr','rs5','rh5'):
+        proceeddict[i]  = globals()[i]
+    outputdict  = {
+        'geometry'  : geomdict,
+        'thermo'    : thermodict,
+        'velocity'  : veltridict,
+        'efficiency': effdict,
+        'losses'    : lossdict,
+        'proceed'   : proceeddict
+        }
+
+    return outputdict
 
 # func to find effts value from fitted func of 
 # n-set of cycle,gparams,rpm
@@ -791,14 +838,18 @@ def optfiteffts(n):
 
 
 #Create 2D Quasi
-def QuasiNorm(inlist):    # INPUT => b4,r4,Zr,rs5,rh5,n,Z5; n dan Z5 harus dinyatakan
+def QuasiNorm(indict,n,Z5):    # INPUT => b4,r4,Zr,rs5,rh5,n,Z5; n dan Z5 harus dinyatakan
     
     global Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh
-    translist=['b4','r4','Zr','rs5','rh5','n','Z5']
-    for i in range(len(translist)):
-        globals()[translist[i]]=inlist[i]
-    print(b4,Zr)
-    Betha4 = np.arctan((Ct4-U4)/Cm4) # tan kan depan/samping
+    #local Beta4,b4,r4
+    #translist=['Beta4','b4','r4','Zr','rs5','rh5']#,'n','Z5']
+
+    locals().update(indict)
+
+    # for i in range(len(translist)):
+    #     globals()[translist[i]]=inlist[i]
+    
+    Betha4 = Beta4#np.arctan((Ct4-U4)/Cm4) # tan kan depan/samping
     QuasiSec=50
     dZ=Zr/QuasiSec
     C2=(r4-rs5)/((dZ-b4)**n)
@@ -858,17 +909,23 @@ def QuasiNorm(inlist):    # INPUT => b4,r4,Zr,rs5,rh5,n,Z5; n dan Z5 harus dinya
     Dsh     = 1/np.tan(Betha5h)/rh5
     Esh     = 3*Tetha4/(mhh**2)-(1/mhh)*(2*1/np.tan(Betha5h))
     Fsh     = 1/mhh**2*(1/np.tan(Betha5h)/rh5+1/np.tan(Betha4)/r4)-2*Tetha4/mhh**3
-    outlist = [Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh]
-    return outlist
+    #outlist = [Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh]
+    outputdict = dict()
+    for i in ('Z','r','Zh','rh','m','Ash','Bsh','Csh','Dsh','Esh','Fsh'):
+        outputdict[i]=globals()[i]
+
+    return outputdict
     # OUTPUT => Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh
 
 #Regress Zr   
-def Zrregs(inlist): # INPUT => Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh
+def Zrregs(indict): # INPUT => Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh
     global phis,tethas,Bethacs,phih,tethah,Bethach
     # translist=[Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh]
     # for i in len(translist):
     # translist[i]=inlist[i]
     #Shroud
+    locals().update(indict)
+
     dms=[]
     dms.append(0)
     for i in range(1,len(Z)):
@@ -914,12 +971,17 @@ def Zrregs(inlist): # INPUT => Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh
         tethah.append(1/np.tan(rh[i]*(mhi[i]*(Dsh+Esh**2+Fsh**3))))
         Bethach.append(1/np.arctan(rh[i]*(Dsh+3*Esh**2+4*Fsh**3)))
 
-    #Return Results
+    outputdict = dict()
+    for i in ('phis','tethas','Bethacs','phih','tethah','Bethach'):
+        outputdict[i]=globals()[i]
+    return outputdict
     # OUTPUT => return(phis,tethas,Bethacs,phih,tethah,Bethach)
 
 #Meridional Coordinate
-def meridional(): # INPUT => phis,tethas,Bethacs,phih,tethah,Bethach
+def meridional(indict): # INPUT => phis,tethas,Bethacs,phih,tethah,Bethach
     global X,Y,Z,Xh,Yh,Zh
+    locals().update(indict)
+
     X=[]
     Y=[]
     Xh=[]
@@ -934,11 +996,16 @@ def meridional(): # INPUT => phis,tethas,Bethacs,phih,tethah,Bethach
         Xh.append(rh[i]*np.sin(tethah[i]))
         Yh.append(rh[i]*np.cos(tethah[i]))
     Zh=Zh
+    outputdict=dict()
+    for i in ('X','Y','Z','Xh','Yh','Zh'):
+        outputdict[i]=globals()[i]
+    return outputdict
     # OUTPUT => return(X,Y,Z,Xh,Yh,Zh)
 
 #Vector Component
-def VectorComp(): # INPUT => X,Y,Z,Xh,Yh,Zh
+def VectorComp(indict): # INPUT => X,Y,Z,Xh,Yh,Zh
     global Txs,Tys,Tzs,Txh,Tyh,Tzh
+    locals().update(indict)
     #Length Calculation
     L=[]
     Bx=[]
@@ -985,12 +1052,18 @@ def VectorComp(): # INPUT => X,Y,Z,Xh,Yh,Zh
         Tyh.append(Sxh[i]*Bz[i]-Szh[i]*Bx[i])
         Tzh.append(Syh[i]*Bx[i]-Sxh[i]*By[i])
 
+    outputdict=dict()
+    for i in ('Txs','Tys','Tzs','Txh','Tyh','Tzh'):
+        outputdict[i]=globals()[i]
+    return outputdict
     # OUTPUT => Txs,Tys,Tzs,Txh,Tyh,Tzh,tb4,tb5
+
 
 #3D Coordinate
 
-def Coord3D(): # INPUT =>Txs,Tys,Tzs,Txh,Tyh,Tzh,tb4,tb5
+def Coord3D(indict,tb4,tb5): # INPUT =>Txs,Tys,Tzs,Txh,Tyh,Tzh,tb4,tb5
     global XcorS,YcorS,ZcorS,XcorH,YcorH,ZcorH
+    locals().update(indict)
     #Tebal Sudu
     tb =[]
     tb.append(tb4)
@@ -1020,6 +1093,11 @@ def Coord3D(): # INPUT =>Txs,Tys,Tzs,Txh,Tyh,Tzh,tb4,tb5
         YcorH.append(Yh[i]-0.5*Tyh[i]*tb[i])
         ZcorH.append(Zh[i]+0.5*Tzh[i]*tb[i])
         ZcorH.append(Zh[i]-0.5*Tzh[i]*tb[i])
+
+    outputdict=dict()
+    for i in ('XcorS','YcorS','ZcorS','XcorH','YcorH','ZcorH'):
+        outputdict[i]=globals()[i]
+    return outputdict
     # OUTPUT => return (XcorS,YcorS,ZcorS,XcorH,YcorH,ZcorH)
 
 def proceedR(savenumber):

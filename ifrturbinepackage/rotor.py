@@ -600,9 +600,9 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
         # Cm4ii       = mflow/(2*np.pi()*b5*)
         h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
         rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))**-1-1)
+        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
         # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
-        if errorCm5 <= 10**-10:
+        if errorCm5 <= 5*1e-5:
             Cm5didconverge1 = True
             Cm5didconverge2 = True
             Cm5     = Cm5ii
@@ -614,14 +614,14 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
             break
     while Cm5didconverge2 == False:
         k2Cm5     = k2Cm5 +1         # => iteration amount
-        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm5
-        h5ss       = h05ss-1/2*(Cm5ii**2+Ct5**2)
+        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
+        h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
         rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
         if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
             choked5 = True
             break
-        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))**-1-1)
-        if errorCm5 <= 10**-10:
+        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
+        if errorCm5 <= 5*1e-5:
             Cm5didconverge2 = True
             break
     h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
@@ -820,19 +820,19 @@ def constraint3(x):
 def optfiteffts(n):
     p = whichfitfun(n)
 
-    tenflowb=(0.0,9.0)  # Constraint: 0<=10*flowcoeff<=9
-    tenworkb=(0.0,20.0)  # Constraint: 0<=10*workcoeff<=20
-    nb=(n,n)
+    tenflowb=(0,9)  # Constraint: 0<=10*flowcoeff<=9
+    tenworkb=(0,20)  # Constraint: 0<=10*workcoeff<=20
+    nb=(n)
     
     
-    # constr1 = {'type': 'ineq', 'fun':constraint1 }
+    constr1 = {'type': 'ineq', 'fun':constraint1 }
     # constr2 = {'type': 'ineq', 'fun':constraint2 }
     # constr3 = {'type': 'eq', 'fun': constraint3 }
-    # constr  = [constr1,constr2,constr3]
+    constr  = [constr1,constr1,constr3]
     bnds=(tenflowb,tenworkb,nb)
-    initval=[2.0,10.0,n]
+    initval=[2,10,n]
 
-    opteffts=optimize.minimize(mfiteffts,initval,method='SLSQP',bounds=bnds)
+    opteffts=optimize.minimize(-1*fiteffts,initval,method='SLSQP',bounds=bnds)
     return opteffts
     
 
@@ -1100,18 +1100,18 @@ def Coord3D(indict,tb4,tb5): # INPUT =>Txs,Tys,Tzs,Txh,Tyh,Tzh,tb4,tb5
     return outputdict
     # OUTPUT => return (XcorS,YcorS,ZcorS,XcorH,YcorH,ZcorH)
 
-def proceedR(savenumber):
-    n=4
-    Z5=0
-    QuasiNorm()
-    Zrregs()
-    meridional()
-    VectorComp()
-    Coord3D()
-    dict = {'xshroud':XcorS,'yshroud':YcorS,'zshroud':ZcorS,'xhub':XcorH,'yhub':YcorH,'zhub':ZcorH}
-    df3drotor=pd.DataFrame(dict)
-    savetoas=os.path.join(ROOT_DIR,"outputs",f"rotor{savenumber}coordinate.csv")
-    df3drotor.to_csv(savetoas,index=False)
+# def proceedR(savenumber):
+#     n=4
+#     Z5=0
+#     QuasiNorm()
+#     Zrregs()
+#     meridional()
+#     VectorComp()
+#     Coord3D()
+#     dict = {'xshroud':XcorS,'yshroud':YcorS,'zshroud':ZcorS,'xhub':XcorH,'yhub':YcorH,'zhub':ZcorH}
+#     df3drotor=pd.DataFrame(dict)
+#     savetoas=os.path.join(ROOT_DIR,"outputs",f"rotor{savenumber}coordinate.csv")
+#     df3drotor.to_csv(savetoas,index=False)
 
 
 

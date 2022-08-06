@@ -602,7 +602,7 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
         rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
         errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
         # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
-        if errorCm5 <= 5*1e-5:
+        if errorCm5 <= 5*1e-3:
             Cm5didconverge1 = True
             Cm5didconverge2 = True
             Cm5     = Cm5ii
@@ -612,9 +612,12 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
             Cm5      = Cm5ii
             rho5ss  = rho5ssii
             break
+        if k1Cm5>200:
+            print(f"loop1 iterates too long ({k1Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
+            break
     while Cm5didconverge2 == False:
         k2Cm5     = k2Cm5 +1         # => iteration amount
-        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
+        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
         h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
         rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
         if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
@@ -623,6 +626,9 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
         errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
         if errorCm5 <= 5*1e-5:
             Cm5didconverge2 = True
+            break
+        if k2Cm5>200:
+            print(f"loop2 iterates too long ({k1Cm5},{k2Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
             break
     h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
     C5      = np.sqrt(Cm5**2+Ct5**2)

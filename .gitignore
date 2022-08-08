@@ -1,2 +1,5 @@
 __pycache__/
 venv/
+testdir/exclude.txt
+testdir/excludethis/
+test/dir/includethis/includethisbutexcludeallinit/*

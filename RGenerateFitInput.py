@@ -16,11 +16,11 @@ gparamsetnum   = 1
 rpmnum      = 4
 
 MaxVar1 = 14            #Max flow Coeffx10 in axis
-MinVar1 = 0.3             #Min flow Coeffx10 in axis
-MaxVar2 = 30            #Max Work Coeffx10 in axis
+MinVar1 = 0.2             #Min flow Coeffx10 in axis
+MaxVar2 = 27            #Max Work Coeffx10 in axis
 MinVar2 = 2             #Min Work Coeffx10 in axis
-ndata1  = 15
-ndata2  = 15
+ndata1  = 70
+ndata2  = 70
 z_datapos = []
 x_datapos = []
 y_datapos = []

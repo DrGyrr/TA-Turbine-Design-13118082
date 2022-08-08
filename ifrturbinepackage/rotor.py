@@ -815,30 +815,32 @@ def fiteffts(tenflow_coeff,tenwork_coeff,n):
 #         for j in range (0,6):
 #             fiteffts=fiteffts+p[i][j]*tenflow_coeff**i*tenwork_coeff**j
 # func to find optimum effts value of the fitted func
-def mfiteffts(tenflow_coeff,tenwork_coeff,n):
+def mfiteffts(x):
+    tenflow_coeff   = x[0]
+    tenwork_coeff   = x[1]
+    n               = x[2]
     return fiteffts(tenflow_coeff,tenwork_coeff,n)*-1
 def constraint1(x):
-    return x
+    return x[0]-0
 def constraint2(x):
-    return x
+    return x[1]-0
 def constraint3(x):
-    return x
+    return x[2]-0
 def optfiteffts(n):
-    p = whichfitfun(n)
 
-    tenflowb=(0,9)  # Constraint: 0<=10*flowcoeff<=9
-    tenworkb=(0,20)  # Constraint: 0<=10*workcoeff<=20
-    nb=(n)
+    tenflowb=(0,12)  # Constraint: 0<=10*flowcoeff<=9
+    tenworkb=(0,25)  # Constraint: 0<=10*workcoeff<=20
+    nb=(n,n)
     
     
     constr1 = {'type': 'ineq', 'fun':constraint1 }
-    # constr2 = {'type': 'ineq', 'fun':constraint2 }
-    # constr3 = {'type': 'eq', 'fun': constraint3 }
-    constr  = [constr1,constr1,constr3]
+    constr2 = {'type': 'ineq', 'fun':constraint2 }
+    constr3 = {'type': 'eq', 'fun': constraint3 }
+    constr  = [constr1,constr2,constr3]
     bnds=(tenflowb,tenworkb,nb)
-    initval=[2,10,n]
+    initval=[0.5,3,n]
 
-    opteffts=optimize.minimize(-1*fiteffts,initval,method='SLSQP',bounds=bnds)
+    opteffts=optimize.minimize(mfiteffts,initval,method='BFGS',bounds=bnds,constraints=constr)
     return opteffts
     
 

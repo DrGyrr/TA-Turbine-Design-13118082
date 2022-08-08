@@ -1,5 +1,6 @@
 import os
 import inspect
+from tkinter import N
 import pandas as pd
 import numpy as np
 from ifrturbinepackage.definitions import *
@@ -43,8 +44,9 @@ def whatrpm(m):
     rpm     = np.float64(dfrpms.iloc[m-1]['rpm'])
     return rpm
 
-def whichfitfun(n):
+def whichfitfun(z):
     global p
+    n   = int(z)
     p=np.zeros(shape=(6, 6))
     dffitfun = pd.read_excel(os.path.join(ROOT_DIR,"Inputs","fittedpolycoeffs",f"{n}.xlsx"),sheet_name='COEFFS',engine='openpyxl',skiprows=1,usecols=range(1,7),header=0,index_col=False)
     for i in range(0,6):

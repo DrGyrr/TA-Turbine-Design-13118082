@@ -1,7 +1,5 @@
 from ifrturbinepackage.definitions import *
 from ifrturbinepackage.inputs import *
-
-
 from ifrturbinepackage.rotor import *
 
 
@@ -42,9 +40,10 @@ constr1 = {'type': 'ineq', 'fun':constraint1 }
 constr2 = {'type': 'ineq', 'fun':constraint2 }
 constr  = [constr1,constr2]
 bnds=(tenflowb,tenworkb)
-initval=[0.5,3]
-opteffts_test=optimize.minimize(mfitefftsforn,initval,method='SLSQP',bounds=bnds,constraints=constr)
+initval=[1,3]
+opteffts_test=optimize.minimize(mfitefftsforn,initval,method='Nelder-Mead',bounds=bnds,constraints=constr)
 print(opteffts_test)
-print(mfitefftsforn([2,12]))
+
+print(fiteffts(1,8,n))
 # p=whichfitfun(0)
 # print(p)

@@ -251,11 +251,13 @@ def ComputeR2(tenflow_coeff,tenwork_coeff,k,l,m):
 
     flow_coeff=tenflow_coeff/10
     work_coeff=tenwork_coeff/10
+
     cycledict=whichcycle (k)       # The cycle to be computed
     locals().update(cycledict)
     gparamdict=whichgparamset (l)  # geometry parameter set to be used is the l
     locals().update(gparamdict)        # rpm at m will be used
     rpm =whatrpm(m)          # rpm at m will be used
+
     Cp4 = Props('C','T',T_1,'P',P_1,fluid)
     Cv4 = Props('O','T',T_1,'P',P_1,fluid)
     gamma = Cp4/Cv4
@@ -305,6 +307,7 @@ def ComputeR2(tenflow_coeff,tenwork_coeff,k,l,m):
     rho05ss = Props('D','H',h05ss,'S',s01,fluid)
     # mflow   = rho5ss*2*np.pi*b5*r5*Cm5
     rho04s  = Props('D','H',h04,'S',s01,fluid)
+
     Cm4_0    = 0
     rho4s_0= rho04s        # => initial value for iteration
     Cm4ii    = Cm4_0
@@ -500,13 +503,15 @@ def ComputeR2(tenflow_coeff,tenwork_coeff,k,l,m):
         effdict[i]      = globals()[i]
     for i in ('LossInc0','LossInc','LossPass','LossTip','LossWind','LossTE','Effreductbladeloading','LossExit'):
         lossdict[i]     = globals()[i]
-
+    for i in ('Beta4','b4','r4','Zr','rs5','rh5'):
+        proceeddict[i]  = globals()[i]
     outputdict  = {
         'geometry'  : geomdict,
         'thermo'    : thermodict,
         'velocity'  : veltridict,
         'efficiency': effdict,
-        'losses'    : lossdict
+        'losses'    : lossdict,
+        'proceed'   : proceeddict
         }
     
     return outputdict
@@ -865,46 +870,87 @@ def QuasiNorm(indict,n,Z5):    # INPUT => b4,r4,Zr,rs5,rh5,n,Z5; n dan Z5 harus 
     r5=(rs5+rh5)/2
     b5=(rs5-rh5)
     #Shroud Sections
+    # Z=[]
+    # Z.append(0)
+    # m=[]
+    # m.append(0)
+    # for i in range(0,QuasiSec-1):
+    #     Z.append(Z[i]+dZ)
+    # Z=np.array(Z)
+    # dzb4=dZ-b4
+    # for i in [Z]:
+    #     Epsi = i/dzb4
+    #     r=rs5+(r4-rs5)*Epsi**n
+    # for i in [Z]:
+    #     fz=np.sqrt(1+(C2*n*(i-(i-1))**(n-1))**2)
+    # m.append((dZ/3)*(fz[0]+4*fz[1]) )
+    # for i in range (2, len(fz)):
+    #     if (i % 2) == 0:
+    #         m.append(m[i-1]+4*(fz[i])/3)
+    #     else:
+    #         m.append(m[i-1]+2*(fz[i])/3)                            #perbaiki value fz #check OK
+
     Z=[]
     Z.append(0)
     m=[]
     m.append(0)
-    for i in range(0,QuasiSec-1):
+    for i in range(0,QuasiSec):
         Z.append(Z[i]+dZ)
-    Z=np.array(Z)
-    dzb4=dZ-b4
-    for i in [Z]:
-        Epsi = i/dzb4
-        r=rs5+(r4-rs5)*Epsi**n
-    for i in [Z]:
-        fz=np.sqrt(1+(C2*n*(i-(i-1))**(n-1))**2)
-    m.append((dZ/3)*(fz[0]+4*fz[1]) )
+
+    Epsi=[]
+    r=[]
+    fz=[]
+    for i in range(0,len(Z)):
+        Epsi.append(Z[i]/dzb4)
+        r.append(rs5+(r4-rs5)*Epsi[i]**n)
+    for i in range(0,len(Z)):
+        fz.append(np.sqrt(1+(C2*n*(Z[i]-(Z5))**(n-1))**2))
+
+    m.append((dZ/3)*(fz[0]+4*fz[1]))
     for i in range (2, len(fz)):
         if (i % 2) == 0:
-            m.append(m[i-1]+4*(fz[i])/3)
+            m.append(m[i-1]+4*(fz[i])*dZ/3) 
         else:
-            m.append(m[i-1]+2*(fz[i])/3)                            #perbaiki value fz #check OK
+            m.append(m[i-1]+2*(fz[i])*dZ/3)
+
 
     #Hub Sections
+    # Zh=[]
+    # Zh.append(0)
+    # mh=[]
+    # mh.append(0)
+    # rh=[]
+    # fzh=[]
+    # for i in range(1,QuasiSec):
+    #     Zh.append(Zh[i-1]+dZ)
+    #     Ephi = Zh[i]/(dZ-b4)
+    # for i in range(0,QuasiSec):
+    #     rh.append(rh5+Zr-np.sqrt((Zr**2)-(Zh[i]**2)))
+    #     fzh.append(np.sqrt(1+(C2*n*(Zh[i]-Z5)**(n-1))**2))
+    # mh.append((dZ/3)*(fzh[0]+4)/fzh[0])                      #Perbaiki
+    # for i in range(1,len(fzh)):
+    #     mh.append(mh[i]+2*(i)/3)                                 #Perbaiki value mh 
+
     Zh=[]
     Zh.append(0)
     mh=[]
     mh.append(0)
     rh=[]
-    fzh=[]
-    for i in range(1,QuasiSec):
-        Zh.append(Zh[i-1]+dZ)
-        Ephi = Zh[i]/(dZ-b4)
-    for i in range(0,QuasiSec):
+    dZh=Zr/50
+    for i in range(0,QuasiSec-5):
+        Zh.append(Zh[i]+dZh)
+    for i in range(0,4):
+        Zh.append(Zh[QuasiSec-5])
+
+    for i in range(0,len(Zh)-5):
         rh.append(rh5+Zr-np.sqrt((Zr**2)-(Zh[i]**2)))
-        fzh.append(np.sqrt(1+(C2*n*(Zh[i]-Z5)**(n-1))**2))
-    mh.append((dZ/3)*(fzh[0]+4)/fzh[0])                      #Perbaiki
-    for i in range(1,len(fzh)):
-        mh.append(mh[i]+2*(i)/3)                                 #Perbaiki value mh 
+    for i in range(QuasiSec-5,QuasiSec):
+        rh.append((r[QuasiSec]-rh[QuasiSec-6])/5+rh[i-1])
+
+    for i in range(1,len(Z)):
+        mh.append(i/QuasiSec*90/360*np.pi*Zr*2)
 
 
-    # Zm=(Z-Zh)/2
-    # rm=(r-rh)/2
     Betha5  = np.arccos(Cm5/W5)
     Betha5s = np.arctan(np.tan(Betha5)/rs5)
     Betha5h = np.arctan(np.tan(Betha5)/rh5)
@@ -925,59 +971,106 @@ def QuasiNorm(indict,n,Z5):    # INPUT => b4,r4,Zr,rs5,rh5,n,Z5; n dan Z5 harus 
     return outputdict
     # OUTPUT => Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh
 
-#Regress Zr   
+#Perhitungan sudut   
 def Zrregs(indict): # INPUT => Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh
     global phis,tethas,Bethacs,phih,tethah,Bethach
-    # translist=[Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh]
-    # for i in len(translist):
-    # translist[i]=inlist[i]
-    #Shroud
+
     locals().update(indict)
+    #Shroud
+    
+
+    # dms=[]
+    # dms.append(0)
+    # for i in range(1,len(Z)):
+    #     dms=np.sqrt((Z[i]-Z[i-1])**2+(r[i]-r[i-1])**2)
+    # msi=[]
+    # msi.append(0)
+    # for i in range(1,len(Z)):
+    #     msi.append(msi[i-1]+dms)
+    # polynom = 6             #Coeficient harus 6 (Belum otomatis)
+    # mymodel = np.poly1d(np.polyfit(Z,r,polynom))
+    # #need to regress the mymodel
+    # #Define the Function of phi
+    # coeffphis=[]
+    # phis=[]
+    # tethas=[]
+    # Bethacs=[]
+    # for coeff in mymodel:
+    #     coeffphis.append(coeff)
+    # for i in range(0,len(msi)):
+    #     phis.append(6*coeffphis[5]*msi[i]**5+5*coeffphis[4]*msi[i]**4+4*coeffphis[3]*msi[i]**3+3*coeffphis[2]*msi[i]**2+2*coeffphis[1]*msi[i]**1+coeffphis[0])
+    #     tethas.append(msi[i]*(Ash+Bsh**3+Csh**4))
+    #     Bethacs.append(1/np.arctan(r[i]*(Ash+3*Bsh**2+4*Csh**3)))
 
     dms=[]
     dms.append(0)
     for i in range(1,len(Z)):
-        dms=np.sqrt((Z[i]-Z[i-1])**2+(r[i]-r[i-1])**2)
+        dms.append(np.sqrt((Z[i]-Z[i-1])**2+(r[i]-r[i-1])**2))
     msi=[]
     msi.append(0)
     for i in range(1,len(Z)):
-        msi.append(msi[i-1]+dms)
-    polynom = 6             #Coeficient harus 6 (Belum otomatis)
-    mymodel = np.poly1d(np.polyfit(Z,r,polynom))
-    #need to regress the mymodel
-    #Define the Function of phi
-    coeffphis=[]
+        msi.append(msi[i-1]+dms[i])
+
     phis=[]
     tethas=[]
     Bethacs=[]
-    for coeff in mymodel:
-        coeffphis.append(coeff)
+    phis.append(0)
+    tethas.append(0)
+
+    for i in range(1,len(msi)):
+        if ((r[i]-r[i-1])/(msi[i]-msi[i-1]))>1:
+            phis.append(np.arcsin(1))
+        else:
+            phis.append(np.arcsin((r[i]-r[i-1])/(msi[i]-msi[i-1])))
+        tethas.append(Ash*msi[i]+Bsh*msi[i]**3+Csh*msi[i]**4)
     for i in range(0,len(msi)):
-        phis.append(6*coeffphis[5]*msi[i]**5+5*coeffphis[4]*msi[i]**4+4*coeffphis[3]*msi[i]**3+3*coeffphis[2]*msi[i]**2+2*coeffphis[1]*msi[i]**1+coeffphis[0])
-        tethas.append(msi[i]*(Ash+Bsh**3+Csh**4))
-        Bethacs.append(1/np.arctan(r[i]*(Ash+3*Bsh**2+4*Csh**3)))
+        Bethacs.append(np.arctan(1/(r[i]*(Ash+3*Bsh*msi[i]**2+4*Csh*msi[i]**3))))
 
     #Hub
+    # dmh=[]
+    # dmh.append(0)
+    # for i in range(1,len(Zh)):
+    #     dmh.append(np.sqrt((Zh[i]-Zh[i-1])**2+(rh[i]-rh[i-1])**2))
+    # mhi=[]
+    # mhi.append(0)
+    # for i in range(1,len(dmh)):
+    #     mhi.append(mhi[i-1]+dmh[i])
+    # polynomh = 6
+    # mymodelh = np.poly1d(np.polyfit(Zh,rh,polynomh))
+    # coeffphih=[]
+    # phih=[]
+    # tethah=[]
+    # Bethach=[]
+    # for coeffh in mymodelh:
+    #     coeffphih.append(coeffh)
+    # for i in range(0,len(mhi)):
+    #     phih.append(6*coeffphih[5]*mhi[i]**5+5*coeffphih[4]*mhi[i]**4+4*coeffphih[3]*mhi[i]**3+3*coeffphih[2]*mhi[i]**2+2*coeffphih[1]*mhi[i]**1+coeffphih[0])
+    #     tethah.append(1/np.tan(rh[i]*(mhi[i]*(Dsh+Esh**2+Fsh**3))))
+    #     Bethach.append(1/np.arctan(rh[i]*(Dsh+3*Esh**2+4*Fsh**3)))
+
     dmh=[]
     dmh.append(0)
     for i in range(1,len(Zh)):
         dmh.append(np.sqrt((Zh[i]-Zh[i-1])**2+(rh[i]-rh[i-1])**2))
     mhi=[]
     mhi.append(0)
-    for i in range(1,len(dmh)):
+    for i in range(1,len(Zh)):
         mhi.append(mhi[i-1]+dmh[i])
-    polynomh = 6
-    mymodelh = np.poly1d(np.polyfit(Zh,rh,polynomh))
-    coeffphih=[]
+
     phih=[]
     tethah=[]
     Bethach=[]
-    for coeffh in mymodelh:
-        coeffphih.append(coeffh)
+    phih.append(0)
+    tethah.append(0)
+
+    for i in range(1,len(mhi)):
+        if (rh[i]-rh[i-1])/(mhi[i]-mhi[i-1])>1:
+            phih.append(np.arcsin(1))
+        else:
+            phih.append(np.arcsin((rh[i]-rh[i-1])/(mhi[i]-mhi[i-1])))
+        tethah.append(mhi[i]*Dsh+Esh*mhi[i]**2+Fsh*mhi[i]**3)
     for i in range(0,len(mhi)):
-        phih.append(6*coeffphih[5]*mhi[i]**5+5*coeffphih[4]*mhi[i]**4+4*coeffphih[3]*mhi[i]**3+3*coeffphih[2]*mhi[i]**2+2*coeffphih[1]*mhi[i]**1+coeffphih[0])
-        tethah.append(1/np.tan(rh[i]*(mhi[i]*(Dsh+Esh**2+Fsh**3))))
-        Bethach.append(1/np.arctan(rh[i]*(Dsh+3*Esh**2+4*Fsh**3)))
+        Bethach.append(np.arctan(1/(rh[i]*(Dsh+3*Esh*mhi[i]**2+4*Fsh*mhi[i]**3))))
 
     outputdict = dict()
     for i in ('phis','tethas','Bethacs','phih','tethah','Bethach'):
@@ -1079,31 +1172,65 @@ def Coord3D(indict,tb4,tb5): # INPUT =>Txs,Tys,Tzs,Txh,Tyh,Tzh,tb4,tb5
         tb.append(tb[i-1]+(abs(tb4-tb5)/len(Txs)))
 
     #Shroud 
-    XcorS=[]
-    YcorS=[]
-    ZcorS=[]
+    # XcorS=[]
+    # YcorS=[]
+    # ZcorS=[]
+    # for i in range(0,len(Txs)):
+    #     XcorS.append(X[i]+0.5*Txs[i]*tb[i])
+    #     XcorS.append(X[i]-0.5*Txs[i]*tb[i])
+    #     YcorS.append(Y[i]+0.5*Tys[i]*tb[i])
+    #     YcorS.append(Y[i]-0.5*Tys[i]*tb[i])
+    #     ZcorS.append(Z[i]+0.5*Tzs[i]*tb[i])
+    #     ZcorS.append(Z[i]-0.5*Tzs[i]*tb[i])
+
+    XcorSP=[]
+    YcorSP=[]
+    ZcorSP=[]
+    XcorSN=[]
+    YcorSN=[]
+    ZcorSN=[]
     for i in range(0,len(Txs)):
-        XcorS.append(X[i]+0.5*Txs[i]*tb[i])
-        XcorS.append(X[i]-0.5*Txs[i]*tb[i])
-        YcorS.append(Y[i]+0.5*Tys[i]*tb[i])
-        YcorS.append(Y[i]-0.5*Tys[i]*tb[i])
-        ZcorS.append(Z[i]+0.5*Tzs[i]*tb[i])
-        ZcorS.append(Z[i]-0.5*Tzs[i]*tb[i])
+        XcorSP.append(X[i]+0.5*Txs[i]*tb[i])
+        YcorSP.append(Y[i]+0.5*Tys[i]*tb[i])
+        ZcorSP.append(Z[i]+0.5*Tzs[i]*tb[i])
+        
+    for i in range(0,len(Txs)):
+        XcorSN.append(X[i]-0.5*Txs[i]*tb[i])
+        YcorSN.append(Y[i]-0.5*Tys[i]*tb[i])
+        ZcorSN.append(Z[i]-0.5*Tzs[i]*tb[i])
 
     #Hub
-    XcorH=[]
-    YcorH=[]
-    ZcorH=[]
+    # XcorH=[]
+    # YcorH=[]
+    # ZcorH=[]
+    # for i in range(0,len(Txs)):
+    #     XcorH.append(Xh[i]+0.5*Txh[i]*tb[i])
+    #     XcorH.append(Xh[i]-0.5*Txh[i]*tb[i])
+    #     YcorH.append(Yh[i]+0.5*Tyh[i]*tb[i])
+    #     YcorH.append(Yh[i]-0.5*Tyh[i]*tb[i])
+    #     ZcorH.append(Zh[i]+0.5*Tzh[i]*tb[i])
+    #     ZcorH.append(Zh[i]-0.5*Tzh[i]*tb[i])
+
+    #Hub
+    XcorHP=[]
+    YcorHP=[]
+    ZcorHP=[]
+    XcorHN=[]
+    YcorHN=[]
+    ZcorHN=[]
     for i in range(0,len(Txs)):
-        XcorH.append(Xh[i]+0.5*Txh[i]*tb[i])
-        XcorH.append(Xh[i]-0.5*Txh[i]*tb[i])
-        YcorH.append(Yh[i]+0.5*Tyh[i]*tb[i])
-        YcorH.append(Yh[i]-0.5*Tyh[i]*tb[i])
-        ZcorH.append(Zh[i]+0.5*Tzh[i]*tb[i])
-        ZcorH.append(Zh[i]-0.5*Tzh[i]*tb[i])
+        XcorHP.append(Xh[i]+0.5*Txh[i]*tb[i])
+        YcorHP.append(Yh[i]+0.5*Tyh[i]*tb[i])
+        ZcorHP.append(Zh[i]+0.5*Tzh[i]*tb[i])
+ 
+    for i in range(0,len(Txs)):
+        XcorHN.append(Xh[i]-0.5*Txh[i]*tb[i])
+        YcorHN.append(Yh[i]-0.5*Tyh[i]*tb[i])
+        ZcorHN.append(Zh[i]-0.5*Tzh[i]*tb[i])    
 
     outputdict=dict()
-    for i in ('XcorS','YcorS','ZcorS','XcorH','YcorH','ZcorH'):
+    # for i in ('XcorS','YcorS','ZcorS','XcorH','YcorH','ZcorH'):
+    for i in ('XcorSP','YcorSP','ZcorSP','XcorSN','YcorSN','ZcorSN','XcorHP','YcorHP','ZcorHP','XcorHN','YcorHN','ZcorHN'):
         outputdict[i]=globals()[i]
     return outputdict
     # OUTPUT => return (XcorS,YcorS,ZcorS,XcorH,YcorH,ZcorH)

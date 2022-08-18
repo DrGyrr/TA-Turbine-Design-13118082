@@ -2,14 +2,14 @@ from ifrturbinepackage.rotor import *
 from ifrturbinepackage.definitions import *
 
 
-savenumber    = 1
+savenumber    = 11
 
 
 
-tenflow_coeff = 2
-tenwork_coeff = 10
+tenflow_coeff = 1.5
+tenwork_coeff = 15
 cyclenum      = 10
-gparamsetnum  = 1
+gparamsetnum  = 6
 rpmnum        = 4
 
 result = ComputeR3(tenflow_coeff,tenwork_coeff,cyclenum,gparamsetnum,rpmnum)

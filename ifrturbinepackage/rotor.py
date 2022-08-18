@@ -258,6 +258,8 @@ def ComputeR2(tenflow_coeff,tenwork_coeff,k,l,m):
     locals().update(gparamdict)        # rpm at m will be used
     rpm =whatrpm(m)          # rpm at m will be used
 
+    P_1 = P_1*10**6
+    P_5 = P_5*10**6
     Cp4 = Props('C','T',T_1,'P',P_1,fluid)
     Cv4 = Props('O','T',T_1,'P',P_1,fluid)
     gamma = Cp4/Cv4
@@ -517,7 +519,7 @@ def ComputeR2(tenflow_coeff,tenwork_coeff,k,l,m):
     return outputdict
 
 def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
-    global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss
+    global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow,h4s,h04s
     global r4,r5,rs5,rh5,b4,b5,Zr,NR,tb4,tb5
     global C4,Ct4,Cm4,W4,U4,Alpha4,Beta4,C5,Ct5,Cm5,W5,U5,Alpha5,Beta5,Beta4opt,Beta4opt2
     global Cm5didconverge1,Cm5didconverge2,k1Cm5,k2Cm5,errorC5
@@ -532,6 +534,9 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
     gparamdict=whichgparamset (l)  # geometry parameter set to be used is the l
     globals().update(gparamdict)
     rpm =whatrpm(m)          # rpm at m will be used
+    P_1 = P_1*10**6
+    P_5 = P_5*10**6
+
     Cp4 = Props('C','T',T_1,'P',P_1,fluid)
     Cv4 = Props('O','T',T_1,'P',P_1,fluid)
     gamma = Cp4/Cv4
@@ -763,8 +768,8 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
     h05 = h05ss+ (LossInc0+LossPass+LossTip+LossWind+LossTE)             #nozzle masih diasumsikan isentropic dan isenthalpic
     h5  = h5ss+ (LossInc+LossPass+LossTip+LossWind+LossTE  )   
     p05 = p05ss
+    p5  = Props('P','H',h5,'S',s05ss,fluid)
     T05 = Props('T','H',h05,'P',p05,fluid)
-    p5  = p5ss
     T5  = Props('T','H',h5,'P',p5,fluid)
 
     #Effisiensi 
@@ -781,7 +786,7 @@ def ComputeR3(tenflow_coeff,tenwork_coeff,k,l,m):
 
     for i in ('r4','r5','rs5','rh5','b4','b5','Zr','NR','tb4','tb5'):
         geomdict[i]     = globals()[i]
-    for i in ('T_1','T_5','P_1','P_5','p04s','p04','p4s','p4','p5ss','p5','p05ss','p05','T05ss','T05','T5ss','T5','rho4s','rho5ss'):
+    for i in ('T_1','T_5','P_1','P_5','p04s','p04','p4s','p4','p5ss','p5','p05ss','p05','T05ss','T05','T5ss','T5','rho4s','rho5ss','mflow','h4s','h04s'):
         thermodict[i]   = globals()[i]
     for i in ('C4','Ct4','Cm4','W4','U4','Alpha4','Beta4','C5','Ct5','Cm5','W5','U5','Alpha5','Beta5','Beta4opt','Beta4opt2','Cm5didconverge1','Cm5didconverge2','k1Cm5','k2Cm5'):
         veltridict[i]   = globals()[i]
@@ -864,9 +869,16 @@ def QuasiNorm(indict,n,Z5):    # INPUT => b4,r4,Zr,rs5,rh5,n,Z5; n dan Z5 harus 
     
     Betha4 = Beta4#np.arctan((Ct4-U4)/Cm4) # tan kan depan/samping
     QuasiSec=50
-    dZ=Zr/QuasiSec
-    C2=(r4-rs5)/((dZ-b4)**n)
-    Zrb4=abs(b4-Zr)
+    # dZ=Zr/QuasiSec
+    # dzb4=abs(Zr-b4)
+
+    # C2=(r4-rs5)/((dZ-b4)**n)
+    # Zrb4=abs(b4-Zr)
+    # r5=(rs5+rh5)/2
+    # b5=(rs5-rh5)
+    dzb4=abs(Zr-b4)
+    dZ=dzb4/QuasiSec
+    C2=(r4-rs5)/((Zr-b4)**n)
     r5=(rs5+rh5)/2
     b5=(rs5-rh5)
     #Shroud Sections
@@ -1124,12 +1136,12 @@ def VectorComp(indict): # INPUT => X,Y,Z,Xh,Yh,Zh
     Txh=[]
     Tyh=[]
     Tzh=[]
-    for i in range(0,len(X)):
+    for i in range(0,len(X)-1):
         L.append(np.sqrt((X[i]-Xh[i])**2+(Y[i]-Yh[i])**2+(Z[i]-Zh[i])**2))
 
     #Vector B Hub and Shroud
     
-    for i in range(0,len(X)):
+    for i in range(0,len(X)-1):
         Bx.append((X[i]-Xh[i])/L[i])
         By.append((Y[i]-Yh[i])/L[i])
         Bz.append((Z[i]-Zh[i])/L[i])
@@ -1163,7 +1175,8 @@ def VectorComp(indict): # INPUT => X,Y,Z,Xh,Yh,Zh
 #3D Coordinate
 
 def Coord3D(indict,tb4,tb5): # INPUT =>Txs,Tys,Tzs,Txh,Tyh,Tzh,tb4,tb5
-    global XcorS,YcorS,ZcorS,XcorH,YcorH,ZcorH
+    # global XcorS,YcorS,ZcorS,XcorH,YcorH,ZcorH
+    global XcorSP,YcorSP,ZcorSP,XcorSN,YcorSN,ZcorSN,XcorHP,YcorHP,ZcorHP,XcorHN,YcorHN,ZcorHN
     locals().update(indict)
     #Tebal Sudu
     tb =[]

@@ -18,9 +18,9 @@ def whichcycle(k):
     if inspect.stack()[1].function == 'ComputeR1':
         mflow = dfcycle.iloc[k-1]['mflow']
     cycledict= {'T_1'   :np.float64(dfcycle.iloc[k-1]['T_1']),
-                'P_1'   :np.float64(dfcycle.iloc[k-1]['P_1']),
+                'P_1'   :np.float64(dfcycle.iloc[k-1]['P_1']*1e6),
                 'T_5'   :np.float64(dfcycle.iloc[k-1]['T_5']),
-                'P_5'   :np.float64(dfcycle.iloc[k-1]['P_5']),
+                'P_5'   :np.float64(dfcycle.iloc[k-1]['P_5']*1e6),
                 'fluid' :dfcycle.iloc[k-1]['fluid'],
                 'mflow' :np.float64(dfcycle.iloc[k-1]['mflow'])}
     return cycledict

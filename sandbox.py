@@ -19,14 +19,48 @@
 #     timestamp_str = time.strftime(  '%m/%d/%Y || %H:%M:%S',
 #                                 time.gmtime(os.path.getmtime(file_path))) 
 #     print(timestamp_str, ' -->', file_name)  
+# ////
+# from ifrturbinepackage.definitions import *
+# from ifrturbinepackage.inputs import *
+# from ifrturbinepackage.rotor import *
 
+# result=ComputeR3(1.53,15,10,6,7)
+# print(result['efficiency'])
+# print(result['geometry'])
+# print(result['velocity'])
+# print(result['thermo'])
+# ////
+
+# from CoolProp.CoolProp import PropsSI as Props
+# from ifrturbinepackage.rotor import *
+# fluid='R32'
+# res=Props('S','P',2.15*10**6,'T',350,fluid)
+# res2=Phase('P',2.15*10**6,'T',350,fluid)
+# print(f"S={res}:{res2}")
+# satpv=getsatpvfors(2.15*10**6,res,fluid)
+# print(f"found at P={satpv}")
+# print(Props('Q','P',satpv['P'],'S',res,fluid))
+
+# # pmin=Props('P_min',fluid)
+# # pmax=Props('Pcrit',fluid)
+# print(pmin,pmax)
+
+# x=3500.5
+# y=4.7
+# print(x//y)
+# print(Props('D','T',425.22,'P',0.82567*10**6,'R32'))
+
+
+''' Preview 2D Contour for n=(2,9)'''
+# %%
 from ifrturbinepackage.definitions import *
 from ifrturbinepackage.inputs import *
 from ifrturbinepackage.rotor import *
 
-result=ComputeR3(1.53,15,10,6,7)
-print(result['efficiency'])
-print(result['geometry'])
-print(result['velocity'])
-print(result['thermo'])
-# print(Props('D','T',425.22,'P',0.82567*10**6,'R32'))
+# %%
+sol=ComputeR4(1.2,15,10,1)
+print(sol)
+
+
+
+# %%

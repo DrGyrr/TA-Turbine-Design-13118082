@@ -1,15 +1,27 @@
+
+# %% Imports
 import matplotlib.pyplot as plt
 from ifrturbinepackage.rotor import *
 from ifrturbinepackage.definitions import *
 from tqdm import tqdm
-import glob
-import time
 import os
 
-# Gather Data for specific cycle, gparams set, and rpm
 
-# apa yang ingin di plot?
-# => dijadikan input
+# %% 
+
+''' ComputeR4 is used
+data generating mode:
+[1] -> variasikan flow & work coefficient
+[2] -> variasikan gparamset
+
+
+'''
+
+
+genmode = 3
+
+# %%
+
 
 cyclenum    = 10
 gparamsetnum   = 1
@@ -42,7 +54,7 @@ with tqdm (total=ndatatocalculate,desc='Computed',unit=' data') as pbar:
                     Var1    = MinVar1 + j*dvar2
                     flowcoeff10 = Var1
                     workcoeff10 = Var2
-                    result  = ComputeR3(flowcoeff10,workcoeff10,cyclenum,gparamsetnum,rpmnum)
+                    result  = ComputeR4(flowcoeff10,workcoeff10,cyclenum,gparamsetnum)
                     ztoplot = result['efficiency']['Effts']
                     if ztoplot>=0:
                         z_datapos.append(ztoplot)

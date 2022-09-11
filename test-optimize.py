@@ -244,14 +244,14 @@ def ComputeR3t(x):
         LossWind = Kf*((rho4s+rho5ss)/2)*U4**3*r4**2/(2*mflow*W5**2)
 
         #Trailing Edge Losses
-        # if 0.04*r4>0.001:
-        tb4 = 0.04*r4
-        # else:
-        # tb4 = 0.001
-        # if 0.02*r4>0.001:
-        tb5 = 0.02*r4
-        # else:
-        #     tb5 = 0.001
+        if 0.04*r4>0.001:
+            tb4 = 0.04*r4
+        else:
+            tb4 = 0.001
+        if 0.02*r4>0.001:
+            tb5 = 0.02*r4
+        else:
+            tb5 = 0.001
         LossTE = rho5ss*W5**2/2*(NR*tb5/(np.pi*(rh5+rs5)*np.cos(Beta5)))**2
 
         #Exit Losses
@@ -1084,7 +1084,7 @@ def r4constr(x):
 #     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
 #     rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
 
-def cm5loopconstr(x):
+def cm5loop1constr(x):
     global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow
     global r4,r5,rs5,rh5,b4,b5,Zr,NR,tb4,tb5
     global C4,Ct4,Cm4,W4,U4,Alpha4,Beta4,C5,Ct5,Cm5,W5,U5,Alpha5,Beta5,Beta4opt,Beta4opt2
@@ -1173,9 +1173,12 @@ def cm5loopconstr(x):
     k1Cm5    = 0
     k2Cm5    = 0
 
-    plimit = Props('P_min',fluid)
-    h5sslimit=Props('H','P',plimit,'S',s05ss,fluid)
+    # plimit = Props('P_min',fluid)
+    T5sslimit = 273 + 30
+    h5sslimit=Props('H','T',T5sslimit,'S',s05ss,fluid)
+    # rho5sslimit=Props('D','T',T5sslimit,'S',s05ss,fluid)
 
+ 
     while Cm5didconverge1 == False:
         k1Cm5       = k1Cm5+1             # => iteration amount
         Cm5i        = Cm5ii
@@ -1183,11 +1186,8 @@ def cm5loopconstr(x):
         Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
         # Cm4ii       = mflow/(2*np.pi()*b5*)
         h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
-        
-        
-        if (h5sslimit-h5ss)/h5ss-0.05<0:
+        if h5sslimit>h5ss:
             break
-            return (h5sslimit-h5ss)/h5ss-0.05
         rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
         errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
         # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
@@ -1201,9 +1201,266 @@ def cm5loopconstr(x):
             Cm5      = Cm5ii
             rho5ss  = rho5ssii
             break
-    return (h5sslimit-h5ss)/h5ss-0.05
+
+    return h5ss-h5sslimit
+
+def cm5loop2constr(x):
+    global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow
+    global r4,r5,rs5,rh5,b4,b5,Zr,NR,tb4,tb5
+    global C4,Ct4,Cm4,W4,U4,Alpha4,Beta4,C5,Ct5,Cm5,W5,U5,Alpha5,Beta5,Beta4opt,Beta4opt2
+    global Cm5didconverge1,Cm5didconverge2,k1Cm5,k2Cm5,errorC5
+    global TotalLoss,LossInc,LossInc0,LossPass,LossTip,LossWind,LossTE,LossExit,S5,O5,Effreductbladeloading
+    global Effts,Efftt,Efftspred,Reaction,vNu
+    tenflow_coeff = x[0]
+    tenwork_coeff = x[1]
+    Rr5r4         = x[2]
+    Rb5b4         = x[3]
+    Rb4r4         = x[4]
+    RZrr4         = x[5]
+    NR            = x[6]
+    rpm           = x[7]
+    flow_coeff=tenflow_coeff/10
+    work_coeff=tenwork_coeff/10
+    cycledict=whichcycle (k)       # The cycle to be computed
+    globals().update(cycledict)
+    # gparamdict=whichgparamset (l)  # geometry parameter set to be used is the l
+    # globals().update(gparamdict)
+    # rpm =whatrpm(m)          # rpm at m will be used
+    P_1 = P_1*10**6
+    P_5 = P_5*10**6
+
+    Cp4 = Props('C','T',T_1,'P',P_1,fluid)
+    Cv4 = Props('O','T',T_1,'P',P_1,fluid)
+    gamma = Cp4/Cv4
+    Rx = 8.31446261815324   #J/K.mol
+    #General Properties inlet outlet turbin (Total)
+    H_1     = Props('H','T',T_1,'P',P_1,fluid)     #J/kg
+    s01     = Props('S','T',T_1,'P',P_1,fluid)     #J/kg.K 
+    T_5     = Props('T','P',P_5,'S',s01,fluid)  # =>asumsi nozzle isenthalpy DAN Isentropic
+    H_5     = Props('H','T',T_5,'P',P_5,fluid)  # meski pada kenyataannya isenthalpic nozzle tidak isentropic
+    DeltaH  = H_1-H_5            #Ideal === Isentropic Total Enthalpy change 
+    C0s     = np.sqrt(2*DeltaH)         #Spouting Velocity
+    #Perhitungan Properties ideal lain (Total)
+    p01     = P_1           #inlet volute [1], Total
+    T01     = T_1
+    h01     = H_1
+    p1      = p01           # inlet turbine, V~0 
+    T1      = T_1
+    h01     = H_1
+    rho1   = Props('D','P',p1,'T',T1,fluid)
+    h02s    = H_1           #inlet nozzle [2], Total
+    s02s    = s01            #ideal volute === approx. as isentropic
+    p02s    = p01
+    T02s    = T01
+    h03s    = h02s           #outlet nozzle [3], Total
+    s03s    = s02s            #ideal nozzle === approx. as isentropic (in Total)
+    p03s    = p02s
+    T03s    = T02s
+    h04s    = h03s           #inlet rotor [4], Total
+    s04s    = s03s           #outlet nozzle === inlet rotor
+    p04s    = p03s
+    T04s    = T03s
+    h04     = h04s          # Nozzle isenthalpic but not isentropic
+    p05ss   = P_5
+    T05ss   = T_5
+    h05ss   = H_5
+    s05ss   = s04s
+    #Segitiga Kecepatan Inlet, m/s, radians
+    U4      = np.sqrt(DeltaH/work_coeff)
+    Cm4     = U4*flow_coeff
+    Ct4     = DeltaH/U4                 # => DeltaH = U4*Ct4-U5*Ct5 ; Alpha5=0 => Ct5=0
+    C4      = np.sqrt(Cm4**2+Ct4**2)
+    Alpha4  = np.arctan(Ct4/Cm4)
+    W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
+    Beta4   = np.arctan((U4-Ct4)/Cm4)
+    h4s    = h04s-1/2*Cm4**2
+    rho4s   = Props('D','H',h4s,'S',s04s,fluid)
+    rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
+    Ct5 = 0 # => it is predetermined that Alpha5=0
+    Alpha5 = 0
+    Cm5_0    = 0
+    rho5ss_0= rho05ss        # => initial value for iteration
+    Cm5ii    = Cm5_0
+    rho5ssii= rho5ss_0
+    Cm5didconverge1 = False
+    Cm5didconverge2 = False
+    choked5     = False
+    k1Cm5    = 0
+    k2Cm5    = 0
+
+    T5sslimit = 273 + 30
+    h5sslimit=Props('H','T',T5sslimit,'S',s05ss,fluid)
+
+    while Cm5didconverge1 == False:
+        k1Cm5       = k1Cm5+1             # => iteration amount
+        Cm5i        = Cm5ii
+        rho5ssi      = rho5ssii
+        Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
+        # Cm4ii       = mflow/(2*np.pi()*b5*)
+        h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
+        rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
+        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
+        # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
+        if errorCm5 <= 5*1e-3:
+            Cm5didconverge1 = True
+            Cm5didconverge2 = True
+            Cm5     = Cm5ii
+            rho5ss   = rho5ssii
+            break
+        if (rho5ssi*Cm5i-rho5ssii*Cm5ii)*(Cm5i-Cm5ii)<0:
+            Cm5      = Cm5ii
+            rho5ss  = rho5ssii
+            break
+        if k1Cm5>200:
+            print(f"loop1 iterates too long ({k1Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
+            break
+    while Cm5didconverge2 == False:
+        k2Cm5     = k2Cm5 +1         # => iteration amount
+        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
+        h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
+        if h5sslimit>h5ss:
+            break
+        rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
+        if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
+            choked5 = True
+            break
+        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
+        if errorCm5 <= 5*1e-5:
+            Cm5didconverge2 = True
+            break
+        if k2Cm5>200:
+            print(f"loop2 iterates too long ({k1Cm5},{k2Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
+            break
+    return h5ss-h5sslimit
+
+def twophaseconstr(x):
+    global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow
+    global r4,r5,rs5,rh5,b4,b5,Zr,NR,tb4,tb5
+    global C4,Ct4,Cm4,W4,U4,Alpha4,Beta4,C5,Ct5,Cm5,W5,U5,Alpha5,Beta5,Beta4opt,Beta4opt2
+    global Cm5didconverge1,Cm5didconverge2,k1Cm5,k2Cm5,errorC5
+    global TotalLoss,LossInc,LossInc0,LossPass,LossTip,LossWind,LossTE,LossExit,S5,O5,Effreductbladeloading
+    global Effts,Efftt,Efftspred,Reaction,vNu
+    tenflow_coeff = x[0]
+    tenwork_coeff = x[1]
+    Rr5r4         = x[2]
+    Rb5b4         = x[3]
+    Rb4r4         = x[4]
+    RZrr4         = x[5]
+    NR            = x[6]
+    rpm           = x[7]
+    flow_coeff=tenflow_coeff/10
+    work_coeff=tenwork_coeff/10
+    cycledict=whichcycle (k)       # The cycle to be computed
+    globals().update(cycledict)
+    # gparamdict=whichgparamset (l)  # geometry parameter set to be used is the l
+    # globals().update(gparamdict)
+    # rpm =whatrpm(m)          # rpm at m will be used
+    P_1 = P_1*10**6
+    P_5 = P_5*10**6
+
+    Cp4 = Props('C','T',T_1,'P',P_1,fluid)
+    Cv4 = Props('O','T',T_1,'P',P_1,fluid)
+    gamma = Cp4/Cv4
+    Rx = 8.31446261815324   #J/K.mol
+    #General Properties inlet outlet turbin (Total)
+    H_1     = Props('H','T',T_1,'P',P_1,fluid)     #J/kg
+    s01     = Props('S','T',T_1,'P',P_1,fluid)     #J/kg.K 
+    T_5     = Props('T','P',P_5,'S',s01,fluid)  # =>asumsi nozzle isenthalpy DAN Isentropic
+    H_5     = Props('H','T',T_5,'P',P_5,fluid)  # meski pada kenyataannya isenthalpic nozzle tidak isentropic
+    DeltaH  = H_1-H_5            #Ideal === Isentropic Total Enthalpy change 
+    C0s     = np.sqrt(2*DeltaH)         #Spouting Velocity
+    #Perhitungan Properties ideal lain (Total)
+    p01     = P_1           #inlet volute [1], Total
+    T01     = T_1
+    h01     = H_1
+    p1      = p01           # inlet turbine, V~0 
+    T1      = T_1
+    h01     = H_1
+    rho1   = Props('D','P',p1,'T',T1,fluid)
+    h02s    = H_1           #inlet nozzle [2], Total
+    s02s    = s01            #ideal volute === approx. as isentropic
+    p02s    = p01
+    T02s    = T01
+    h03s    = h02s           #outlet nozzle [3], Total
+    s03s    = s02s            #ideal nozzle === approx. as isentropic (in Total)
+    p03s    = p02s
+    T03s    = T02s
+    h04s    = h03s           #inlet rotor [4], Total
+    s04s    = s03s           #outlet nozzle === inlet rotor
+    p04s    = p03s
+    T04s    = T03s
+    h04     = h04s          # Nozzle isenthalpic but not isentropic
+    p05ss   = P_5
+    T05ss   = T_5
+    h05ss   = H_5
+    s05ss   = s04s
+    #Segitiga Kecepatan Inlet, m/s, radians
+    U4      = np.sqrt(DeltaH/work_coeff)
+    Cm4     = U4*flow_coeff
+    Ct4     = DeltaH/U4                 # => DeltaH = U4*Ct4-U5*Ct5 ; Alpha5=0 => Ct5=0
+    C4      = np.sqrt(Cm4**2+Ct4**2)
+    Alpha4  = np.arctan(Ct4/Cm4)
+    W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
+    Beta4   = np.arctan((U4-Ct4)/Cm4)
+    h4s    = h04s-1/2*Cm4**2
+    rho4s   = Props('D','H',h4s,'S',s04s,fluid)
+    rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
+    Ct5 = 0 # => it is predetermined that Alpha5=0
+    Alpha5 = 0
+    Cm5_0    = 0
+    rho5ss_0= rho05ss        # => initial value for iteration
+    Cm5ii    = Cm5_0
+    rho5ssii= rho5ss_0
+    Cm5didconverge1 = False
+    Cm5didconverge2 = False
+    choked5     = False
+    k1Cm5    = 0
+    k2Cm5    = 0
+    while Cm5didconverge1 == False:
+        k1Cm5       = k1Cm5+1             # => iteration amount
+        Cm5i        = Cm5ii
+        rho5ssi      = rho5ssii
+        Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
+        # Cm4ii       = mflow/(2*np.pi()*b5*)
+        h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
+        rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
+        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
+        # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
+        if errorCm5 <= 5*1e-3:
+            Cm5didconverge1 = True
+            Cm5didconverge2 = True
+            Cm5     = Cm5ii
+            rho5ss   = rho5ssii
+            break
+        if (rho5ssi*Cm5i-rho5ssii*Cm5ii)*(Cm5i-Cm5ii)<0:
+            Cm5      = Cm5ii
+            rho5ss  = rho5ssii
+            break
+        if k1Cm5>200:
+            print(f"loop1 iterates too long ({k1Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
+            break
+    while Cm5didconverge2 == False:
+        k2Cm5     = k2Cm5 +1         # => iteration amount
+        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
+        h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
+        rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
+        if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
+            choked5 = True
+            break
+        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
+        if errorCm5 <= 5*1e-5:
+            Cm5didconverge2 = True
+            break
+        if k2Cm5>200:
+            print(f"loop2 iterates too long ({k1Cm5},{k2Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
+            break
+    h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
+    satfors=getsatpvfors(P_5,s05ss,fluid)
+    satpv=satfors['P']+satfors['acc']
+    hsatv = Props('H','P',satpv,'S',s05ss,fluid)
 
 
+    return (h5ss-hsatv)/hsatv-0.05
 
 tenflowb    =(1,15)
 tenworkb    =(10,25)
@@ -1229,9 +1486,11 @@ constrrs5 ={'type': 'ineq','fun':rs5constr}
 constrwork ={'type':'ineq','fun':workconstr}
 constrr4={'type':'ineq','fun':r4constr}
 # constrmflow={'type': 'ineq','fun':mflowconstr}
-constrcm5loop={'type': 'ineq','fun':cm5loopconstr}
+constrcm5loop1={'type': 'ineq','fun':cm5loop1constr}
+constrcm5loop2={'type': 'ineq','fun':cm5loop2constr}
+constrtwophase={'type':'ineq','fun':twophaseconstr}
 
-constr       = [constr1,constr2,constr3,constr4,constr5,constr6,constr7,constr8,constrsonic,constrrh5,constrrs5,constrh,constrwork,constrr4,constrcm5loop]
+constr       = [constr1,constr2,constr3,constr4,constr5,constr6,constr7,constr8,constrsonic,constrrh5,constrrs5,constrh,constrwork,constrr4,constrcm5loop1,constrcm5loop2,constrtwophase]
 initval      = [1.2,10,0.35,2,0.15,1,10,50000]
 
 opteffts_tesuto = optimize.minimize(ComputeR3t,initval,method='SLSQP',bounds=bnds,constraints=constr)

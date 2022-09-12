@@ -2604,7 +2604,7 @@ def main():
     print(f"Iteration 0 : Effts = {gparamssol['Effts']*-1} %")
         # coeffsol    = GetCoeffs(gparams=gparamssol['gparams'],mflows=mflow) 
 
-    for i in range(1,4+1):
+    for i in range(1,5+1):
         
         mflowsol    = GetMFlow  (gparams=gparamssol['gparams'], coeffs=coeffssol['coeffs'])
         coeffssol   = GetCoeffs (gparams=gparamssol['gparams'], mflows=mflowsol['mflow'])

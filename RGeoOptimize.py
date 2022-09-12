@@ -903,7 +903,7 @@ def GetGParams(coeffs,mflows): #tenflow_coeff,tenwork_coeff
     tenwork_coeff = coeffs [1]
     mflow    = mflows
     
-    Rr5r4b   = (0.15,0.4)
+    Rr5r4b   = (0.2,0.4)
     Rb5b4b   = (1,5)
     Rb4r4b   = (0.05,0.5)
     RZrr4b   = (0.75,1.4)
@@ -914,7 +914,7 @@ def GetGParams(coeffs,mflows): #tenflow_coeff,tenwork_coeff
     constrrs5   = {'type': 'ineq', 'fun':rs5constrvarg}
 
     constr      = [constrrh5,constrrs5]
-    initval     = [0.15, 1.6, 0.3, 0.8, 10]
+    initval     = [0.15, 1.6, 0.3, 0.8, 12]
 
     opteffts_geo    = optimize.minimize(ComputeR4varg,initval,method='SLSQP',bounds=bnds,constraints=constr)
 
@@ -2253,7 +2253,7 @@ def GetMFlow(gparams,coeffs):
     
 
 
-    mflowb  = (0.5,0.6)
+    mflowb  = (0.5,2)
     bnds    = (mflowb)
     
     constrrh5   = {'type': 'ineq', 'fun': rh5constrvarm}
@@ -2590,7 +2590,7 @@ def main():
             Rr5r4,Rb5b4,Rb4r4,RZrr4,NR, \
             mflow,T_1,P_1,T_5,P_5    
     ''' initial '''
-    cyclenum        = 10
+    cyclenum        = 11
     cycledict       = whichcycle (cyclenum)    
     globals().update(cycledict)
     tenflow_coeff   = 1.2       # initial 1.2 range(0.8,)
@@ -2623,7 +2623,7 @@ def main():
         # coeffssol   = GetCoeffs() # gparamssol['gparams']
 
     optresult = ComputeR4all(mflows=mflowsol['mflow'],coeffs=coeffssol['coeffs'],gparams=gparamssol['gparams'])
-    print("Optimized result:")
+    print(f"Optimized result for cycle {cyclenum} :")
     for i in optresult:
         print(i)
         print(optresult[i])

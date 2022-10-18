@@ -51,16 +51,38 @@
 # print(Props('D','T',425.22,'P',0.82567*10**6,'R32'))
 
 
-''' Preview 2D Contour for n=(2,9)'''
-# %%
-from ifrturbinepackage.definitions import *
-from ifrturbinepackage.inputs import *
-from ifrturbinepackage.rotor import *
+# ''' Preview 2D Contour for n=(2,9)'''
+# # %%
+# from ifrturbinepackage.definitions import *
+# from ifrturbinepackage.inputs import *
+# from ifrturbinepackage.rotor import *
 
-# %%
-sol=ComputeR4(1.2,15,10,1)
-print(sol)
+# # %%
+# sol=ComputeR4(1.2,15,10,1)
+# print(sol)
 
 
 
-# %%
+# # %%
+# from time import sleep
+# seconds = 10
+# for i in range (seconds+1):
+#     print(f"\x1b[2KCounting down...({seconds-i}s)",end="\r")
+    
+#     # print("")
+#     # print("",end="\r\033[A")
+
+
+#     # print ()
+#     sleep(1)
+
+def dumfunc(x):
+    y=x**x
+    askprint = str(input("print?"))
+    if askprint.upper() == 'Y' or askprint.upper() == 'YES':
+        print(y)
+
+    return y,100
+
+a = dumfunc(2)
+print(a)

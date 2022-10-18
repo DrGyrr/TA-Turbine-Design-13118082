@@ -12,6 +12,7 @@ import scipy
 from scipy import optimize
 from scipy.interpolate import interp1d
 from sympy import symbols,Eq,solve
+from decimal import *
 
 #ComputeR1 is deprecated
 def ComputeR1(tenflow_coeff,tenwork_coeff,k):
@@ -1173,32 +1174,38 @@ def optfiteffts(n):
 
 def  msfun(indict,z,z5,n): #INPUT => b4,r4,Zr,rs5,rh5,n,
     locals().update(indict)
-    hpreset = 0.5 *10**-3
-    divnum  = int((z-z5)/hpreset)
-    h       = (z-z5)/divnum
+    if z == 0:
+        m = 0
+    if z != 0:
+        hpreset = 0.5 # dalam mm
+        divnum  = int((z-z5)/hpreset)
+        if divnum < 1:
+            divnum = 1
+        h       = (z-z5)/divnum
 
-    odd = 0
-    even = 0
-    for i in range(0,divnum+1):
-        zi      = z5 + i*h
-        drperdz = (r4-rs5)/(Zr-b4)**n * n * (zi-z5)**(n-1)
-        dmperdz = np.sqrt(1 + drperdz**2)
-        if i == 0:
-            fx0 = dmperdz
-        if i%2 != 0 and i<=divnum-1 and i != 0:
-            odd += dmperdz
-        if i%2 == 0 and i<=divnum-2 and i != 0:
-            even += dmperdz
-        if i == divnum:
-            fxn = dmperdz
+        odd = 0
+        even = 0
+        for i in range(0,divnum+1):
+            zi      = z5 + i*h
+            drperdz = (r4-rs5)/(Zr-b4)**n * n * (zi-z5)**(n-1)
+            dmperdz = np.sqrt(1 + drperdz**2)
+            if i == 0:
+                fx0 = dmperdz
+            if i%2 != 0 and i<=divnum-1 and i != 0:
+                odd += dmperdz
+            if i%2 == 0 and i<=divnum-2 and i != 0:
+                even += dmperdz
+            if i == divnum:
+                fxn = dmperdz
 
-    m = (z-z5)*(fx0 + 4*odd + 2*even + fxn)/(3*divnum)
+        m = (z-z5)*(fx0 + 4*odd + 2*even + fxn)/(3*divnum)
 
     return m
 
-def  mhfun(indict,z,z5,n,modehub): #INPUT => b4,r4,Zr,rs5,rh5,n,
+def  mhfun(indict,z,z5,zp,Rc,modehub): #INPUT => b4,r4,Zr,rs5,rh5,n,
     locals().update(indict)
-    hpreset = 0.5 *10**-3
+    hpreset = 0.1 # dalam mm
+
 
 
     odd = 0
@@ -1206,8 +1213,11 @@ def  mhfun(indict,z,z5,n,modehub): #INPUT => b4,r4,Zr,rs5,rh5,n,
     
 
     if modehub == 'StraightOutlet':
+
         L5      = Zr-Rc
         divnum  = int((z-(z5+L5))/hpreset)
+        if divnum < 1:
+            divnum = 1
         h       = (z-(z5+L5))/divnum
         if z < z5 + L5:
             m  = z - z5
@@ -1228,23 +1238,30 @@ def  mhfun(indict,z,z5,n,modehub): #INPUT => b4,r4,Zr,rs5,rh5,n,
 
     if modehub == 'StraightInlet':
         L4      = r4-(rh5+Rc)
-        divnum  = int((z-z5)/hpreset)
-        h       = (z-z5)/divnum
-        for i in range(0,divnum+1):
-            zi  = z5 + i*h
-            drperdz = (zi-zp)/np.sqrt(Rc**2-(zi-zp)**2)
-            dmperdz = np.sqrt(1 + drperdz**2)
+        if z == 0:
+            m = 0
+        if z != 0 and z != Rc + zp:
+            divnum  = int((z-z5)/hpreset)
+            if divnum < 1:
+                divnum = 1
+            h       = (z-z5)/divnum
+            for i in range(0,divnum+1):
+                zi  = z5 + i*h
+                drperdz = (zi-zp)/np.sqrt(Rc**2-(zi-zp)**2)
+                dmperdz = np.sqrt(1 + drperdz**2)
 
-            if i == 0:
-                fx0 = dmperdz
-            if i%2 != 0 and i<=divnum-1:
-                odd += dmperdz
-            if i%2 == 0 and i<=divnum-2:
-                even += dmperdz
-            if i == divnum:
-                fxn = dmperdz
+                if i == 0:
+                    fx0 = dmperdz
+                if i%2 != 0 and i<=divnum-1:
+                    odd += dmperdz
+                if i%2 == 0 and i<=divnum-2:
+                    even += dmperdz
+                if i == divnum:
+                    fxn = dmperdz
 
-        m = (z-z5)*(fx0 + 4*odd + 2*even + fxn)/(3*divnum)
+            m = (z-z5)*(fx0 + 4*odd + 2*even + fxn)/(3*divnum)
+        if z == Rc + zp:
+            m = np.pi*Rc*2/4
         # tidak termasuk bagian garis lurus di inlet. harus tambahkan sendiri
     return m
 
@@ -1283,7 +1300,8 @@ def phihfun(z,z5,zp,Zr,Rc,modehub):
 def thetacsfun(m,A,B,C):
     return A*m + B*m**3 + C*m**4
 def thetachfun(m,D,E,F):
-    return D*m + E*m**2 + F*m**3
+    # return D*m + E*m**2 + F*m**3
+    return D*m + E*m**3 + F*m**4
 
 def bethacsfun(r,m,A,B,C):
     dthetaperdm = A + 3*B*m**2 + 4*C*m**3
@@ -1291,14 +1309,28 @@ def bethacsfun(r,m,A,B,C):
     return bethacs
 
 def bethachfun(r,m,D,E,F):
-    dthetaperdm = D + 2*E*m + 3*F*m**2
-    bethach     = np.arctan(1/(r*dthetaperdm))
+    # dthetaperdm = D + 2*E*m + 3*F*m**2
+    dthetaperdm = D + 3*E*m**2 + 4*F*m**3
+    # bethach     = np.arctan(1/(r*dthetaperdm))
+    bethach     = np.arctan(np.abs(1/(r*dthetaperdm)))
     return bethach
 
 
 def Gen2DContour(indict:dict,z5,dataamount:int):
-
+    global Beta4,Beta5,b4,r4,Zr,rs5,rh5,r5,b5,tb4,tb5
     locals().update(indict)
+    globals().update(indict)
+    
+    
+    b4  = b4*1000
+    r4  = r4*1000
+    Zr  = Zr*1000
+    rs5 = rs5*1000
+    rh5 = rh5*1000
+    r5  = r5*1000
+    b5  = b5*1000
+    tb4 = tb4*1000
+    tb5 = tb5*1000
 
     # dataamount = 150
     # Generating contour data
@@ -1335,9 +1367,9 @@ def Gen2DContour(indict:dict,z5,dataamount:int):
         phih_data.append(0)
         for i in range(0,dataamount-1):
 
-            zi  = z5 + (Zr-Rc) + i* (Zr-L5)/(dataamount-2)
-            rhi = np.sqrt(Rc**2 - (zi-zp)**2) + rp
-            mhi = mhfun(indict,zi,z5,modehub)
+            zi  = z5 + (Zr-Rc) + i* (Zr-L5)/(dataamount-1)
+            rhi = -np.sqrt(Rc**2 - (zi-zp)**2) + rp
+            mhi = mhfun(indict,zi,z5,zp,Rc,modehub)
             if zi == z5+Zr: 
                 phihi = np.pi/2
             if zi != z5+Zr:
@@ -1354,9 +1386,9 @@ def Gen2DContour(indict:dict,z5,dataamount:int):
         zp  = z5
         rp  = rh5 + Rc
         for i in range(0,dataamount-1):
-            zi  = z5 + i* Zr/(dataamount-2)
-            rhi  = np.sqrt(Rc**2 - (zi-zp)**2) + rp
-            mhi = mhfun(indict,zi,z5,modehub)
+            zi  = z5 + i* Zr/(dataamount-1)
+            rhi  = -np.sqrt(Rc**2 - (zi-zp)**2) + rp
+            mhi = mhfun(indict,zi,z5,zp,Rc,modehub)
             phihi = phihfun(zi,z5,zp,Zr,Rc,modehub)
             zh_data.append(zi)
             rh_data.append(rhi)
@@ -1368,6 +1400,10 @@ def Gen2DContour(indict:dict,z5,dataamount:int):
         phih_data.append(np.pi/2)
     
     outputdict  = dict(indict)
+
+    outputdict.update(indict)
+    for i in ('Beta4','Beta5','Zr','rs5','rh5','r5','r4','b4','b5','tb4','tb5'):
+        outputdict[i] = globals()[i]
     for i in ('modehub','Rc','L4','L5','zp','rp','z5'):
         outputdict[i] = locals()[i]
     for i in ('zh_data','rh_data','mh_data','phih_data','zs_data','rs_data','ms_data','phis_data'):
@@ -1480,42 +1516,59 @@ def QuasiNormNew(indict:dict,nline:int,ns:int) :
 
 
 def BladeAngles(indict:dict,ns:int):
-    '''Generate theta and Bethacs '''
-    locals().update(indict)
-    Betha4  = np.pi/2-Beta4
-    Betha5  = np.pi/2-Beta5
+    ''' Generate theta and Bethacs '''
+    globals().update(indict)
+
+    # Betha4  = np.pi/2-np.abs(Beta4)
+    Betha4  = np.arctan(Cm4/(Ct4-U4))
+    Betha5  = Beta5
     Betha5s = np.arctan(r5*np.tan(Betha5)/rs5)
     Betha5h = np.arctan(r5*np.tan(Betha5)/rh5)
-    ms4     = ms_data[ns][-1]
-    A       = 1/np.tan(Betha5s)/rs5
-    B       = (1/np.tan(Betha4)/r4-1/np.tan(Betha5s)/rs5)/(ms4**2)
-    C       = B/(2*ms4)
-    Tetha4  = ms4/2*(1/np.tan(Betha4)/r4+1/np.tan(Betha5s)/rs5)
-    mh4     = mh_data[-1]
-    D       = 1/np.tan(Betha5h)/rh5
-    E       = 3*Tetha4/(mh4**2)-(1/mh4)*(2*1/np.tan(Betha5h)/rh5+1/np.tan(Betha4)/r4)
-    F       = 1/mh4**2*(1/np.tan(Betha5h)/rh5+1/np.tan(Betha4)/r4)-2*Tetha4/mh4**3
+    ms4     = ms_data[ns][-1]/1000
+    A       = 1/(np.tan(Betha5s)*(rs5/1000))
+    B       = (1/ (np.tan(Betha4)*(r4/1000)) - 1/ (np.tan(Betha5s)*(rs5/1000))) / ((ms4)**2)
+    C       = -B/(2*(ms4))
+    Tetha4  = (ms4)/2 * ( 1/(np.tan(Betha4)*(r4/1000)) + 1/(np.tan(Betha5s)*(rs5/1000)) )
+    mh4     = mh_data[-1]/1000
+    D       = 1/ ( np.tan(Betha5h)*(rh5/1000) )
+    E       = 3*Tetha4/((mh4)**2) - (1/(mh4))*( 2/(np.tan(Betha5h)*(rh5/1000)) + 1/(np.tan(Betha4)*(r4/1000)) )
+    F       = 1/mh4**2 * ( 1/(np.tan(Betha5h)*(rh5/1000)) + 1/(np.tan(Betha4)*(r4/1000)) ) - 2*Tetha4/(mh4)**3
 
-    rsforms = interp1d(ms_data[ns],rs_data[ns],'linear')
-    rhformh = interp1d(mh_data[ns],rh_data[ns],'linear')
-    tethas,tethah,Bethacs,Bethach = ([] for i in range(4))
+    rsforms     = interp1d(ms_data[ns],rs_data[ns],'linear')
+    rhformh     = interp1d(mh_data,rh_data,'linear')
+    phisforms   = interp1d(ms_data[ns],phis_data[ns],'linear')
+    phihformh   = interp1d(mh_data,phih_data,'linear')
+    zsforms     = interp1d(ms_data[ns],zs_data[ns],'linear')
+    zhformh     = interp1d(mh_data,zh_data,'linear')
+
+    tethas,tethah,Bethacs,Bethach,rs,rh,phis,phih,zs,zh = ([] for i in range(10))
     for msi in ms_data[ns]:
         rsi         = rsforms(msi)
-        tethasi     = thetacsfun(msi,A,B,C)
-        bethacsi    = bethacsfun(rsi,msi,A,B,C)
+        tethasi     = thetacsfun(msi/1000,A,B,C)
+        bethacsi    = bethacsfun(rsi/1000,msi/1000,A,B,C)
+        phisi       = phisforms(msi)
+        zsi         = zsforms(msi)
+
         tethas.append(tethasi)
         Bethacs.append(bethacsi)
-    
-    for mhi in mh_data[ns]:
+        rs.append(rsi)
+        phis.append(phisi)
+        zs.append(zsi)
+    for mhi in mh_data:
         rhi         = rhformh(mhi)
-        tethahi     = thetachfun(mhi,D,E,F)
-        bethachi     = bethachfun(rhi,mhi,D,E,F)
+        tethahi     = thetachfun(mhi/1000,D,E,F)
+        bethachi     = bethachfun(rhi/1000,mhi/1000,D,E,F)
+        phihi       = phihformh(mhi)
+        zhi         = zhformh(mhi)
+
         tethah.append(tethahi)
         Bethach.append(bethachi)
+        rh.append(rhi)
+        phih.append(phihi)
+        zh.append(zhi)
 
     outputdict = dict()
-
-    for i in ('tethas','tethah','Bethacs','Bethach'):
+    for i in ('tethas','tethah','Bethacs','Bethach','rs','rh','phis','phih','zs','zh'):
         outputdict[i] = locals()[i]
     return outputdict
 
@@ -1762,9 +1815,9 @@ def Zrregs(indict): # INPUT => Z,r,Zh,rh,m,Ash,Bsh,Csh,Dsh,Esh,Fsh
     # OUTPUT => return(phis,tethas,Bethacs,phih,tethah,Bethach)
 
 #Meridional Coordinate
-def meridional(indict): # INPUT => phis,tethas,Bethacs,phih,tethah,Bethach dan r rh
+def meridional(indict): # INPUT => phis,tethas,Bethacs,phih,tethah,Bethach dan rs rh,zs,zh
     global X,Y,Z,Xh,Yh,Zh
-    locals().update(indict)
+    globals().update(indict)
 
     X=[]
     Y=[]
@@ -1772,14 +1825,14 @@ def meridional(indict): # INPUT => phis,tethas,Bethacs,phih,tethah,Bethach dan r
     Yh=[]
     #Shroud
     for i in range(0,len(tethas)):
-        X.append(r[i]*np.sin(tethas[i]))
-        Y.append(r[i]*np.cos(tethas[i]))
-    Z=Z
+        X.append(rs[i]*np.sin(tethas[i]))
+        Y.append(rs[i]*np.cos(tethas[i]))
+    Z=zs
     #Hub
     for i in range(0,len(tethah)):
         Xh.append(rh[i]*np.sin(tethah[i]))
         Yh.append(rh[i]*np.cos(tethah[i]))
-    Zh=Zh
+    Zh=zh
     outputdict=dict()
     for i in ('X','Y','Z','Xh','Yh','Zh'):
         outputdict[i]=globals()[i]
@@ -1789,12 +1842,15 @@ def meridional(indict): # INPUT => phis,tethas,Bethacs,phih,tethah,Bethach dan r
 #Vector Component
 def VectorComp(indict): # INPUT => X,Y,Z,Xh,Yh,Zh
     global Txs,Tys,Tzs,Txh,Tyh,Tzh
-    locals().update(indict)
+    globals().update(indict)
     #Length Calculation
     L=[]
-    Bx=[]
-    By=[]
-    Bz=[]
+    Bxs=[]
+    Bys=[]
+    Bzs=[]
+    Bxh=[]
+    Byh=[]
+    Bzh=[]
     Sxs=[]
     Sys=[]
     Szs=[]
@@ -1807,34 +1863,71 @@ def VectorComp(indict): # INPUT => X,Y,Z,Xh,Yh,Zh
     Txh=[]
     Tyh=[]
     Tzh=[]
+    # for i in range(0,len(X)):
+    #     L.append(np.sqrt((X[i]-Xh[i])**2+(Y[i]-Yh[i])**2+(Z[i]-Zh[i])**2))
+
+    # #Vector B Hub and Shroud
+    
+    # for i in range(0,len(X)):
+    #     Bx.append((X[i]-Xh[i])/L[i])
+    #     By.append((Y[i]-Yh[i])/L[i])
+    #     Bz.append((Z[i]-Zh[i])/L[i])
+
+    # #Vector S Shroud
+    #     Sxs.append(np.sin(phis[i])*np.sin(tethas[i])*np.sin(Bethacs[i])+np.cos(tethas[i])*np.cos(Bethacs[i]))
+    #     Sys.append(np.cos(phis[i])*np.sin(tethas[i])*np.sin(Bethacs[i])-np.sin(tethas[i])*np.cos(Bethacs[i]))
+    #     Szs.append(np.sin(tethas[i])*np.sin(Bethacs[i]))
+
+    # #Vector S Hub
+    #     Sxh.append(np.sin(phih[i])*np.sin(tethah[i])*np.sin(Bethach[i])+np.cos(tethah[i])*np.cos(Bethach[i]))
+    #     Syh.append(np.cos(phih[i])*np.sin(tethah[i])*np.sin(Bethach[i])-np.sin(tethah[i])*np.cos(Bethach[i]))
+    #     Szh.append(np.sin(tethah[i])*np.sin(Bethach[i]))
+
+    # #Vector T Shroud
+    #     Txs.append(Szs[i]*By[i]-Sys[i]*Bz[i])
+    #     Tys.append(Sxs[i]*Bz[i]-Szs[i]*Bx[i])
+    #     Tzs.append(Sys[i]*Bx[i]-Sxs[i]*By[i])
+    # #Vector T Hub
+    #     Txh.append(Szh[i]*By[i]-Syh[i]*Bz[i])
+    #     Tyh.append(Sxh[i]*Bz[i]-Szh[i]*Bx[i])
+    #     Tzh.append(Syh[i]*Bx[i]-Sxh[i]*By[i])
+
     for i in range(0,len(X)):
         L.append(np.sqrt((X[i]-Xh[i])**2+(Y[i]-Yh[i])**2+(Z[i]-Zh[i])**2))
 
     #Vector B Hub and Shroud
-    
     for i in range(0,len(X)):
-        Bx.append((X[i]-Xh[i])/L[i])
-        By.append((Y[i]-Yh[i])/L[i])
-        Bz.append((Z[i]-Zh[i])/L[i])
+        Bxs.append(np.sin(tethas[i]))
+        # Bx.append((X[i]-Xh[i])/L[i])
+        Bys.append(np.cos(tethas[i]))
+        # By.append((Y[i]-Yh[i])/L[i])
+        Bzs.append(0)
+        # Bz.append((Z[i]-Zh[i])/L[i])
+        Bxh.append(np.sin(tethah[i]))
+        # Bx.append((X[i]-Xh[i])/L[i])
+        Byh.append(np.cos(tethah[i]))
+        # By.append((Y[i]-Yh[i])/L[i])
+        Bzh.append(0)
+        # Bz.append((Z[i]-Zh[i])/L[i])
 
     #Vector S Shroud
-        Sxs.append(np.sin(phis[i])*np.sin(tethas[i])*np.sin(Bethacs[i])+np.cos(tethas[i])*np.cos(Bethacs[i]))
-        Sys.append(np.cos(phis[i])*np.sin(tethas[i])*np.sin(Bethacs[i])-np.sin(tethas[i])*np.cos(Bethacs[i]))
-        Szs.append(np.sin(tethas[i])*np.sin(Bethacs[i]))
+        Sxs.append(np.sin(tethas[i])*np.sin(phis[i])*np.sin(Bethacs[i])+np.cos(tethas[i])*np.cos(Bethacs[i]))
+        Sys.append(np.cos(tethas[i])*np.sin(phis[i])*np.sin(Bethacs[i])-np.sin(tethas[i])*np.cos(Bethacs[i]))
+        Szs.append(np.sin(phis[i])*np.sin(Bethacs[i]))
 
     #Vector S Hub
-        Sxh.append(np.sin(phih[i])*np.sin(tethah[i])*np.sin(Bethach[i])+np.cos(tethah[i])*np.cos(Bethach[i]))
-        Syh.append(np.cos(phih[i])*np.sin(tethah[i])*np.sin(Bethach[i])-np.sin(tethah[i])*np.cos(Bethach[i]))
-        Szh.append(np.sin(tethah[i])*np.sin(Bethach[i]))
+        Sxh.append(np.sin(tethah[i])*np.sin(phih[i])*np.sin(Bethach[i])+np.cos(tethah[i])*np.cos(Bethach[i]))
+        Syh.append(np.cos(tethah[i])*np.sin(phih[i])*np.sin(Bethach[i])-np.sin(tethah[i])*np.cos(Bethach[i]))
+        Szh.append(np.sin(phih[i])*np.sin(Bethach[i]))
 
     #Vector T Shroud
-        Txs.append(Szs[i]*By[i]-Sys[i]*Bz[i])
-        Tys.append(Sxs[i]*Bz[i]-Szs[i]*Bx[i])
-        Tzs.append(Sys[i]*Bx[i]-Sxs[i]*By[i])
+        Txs.append(Szs[i]*Bys[i]-Sys[i]*Bzs[i])
+        Tys.append(Sxs[i]*Bzs[i]-Szs[i]*Bxs[i])
+        Tzs.append(Sys[i]*Bxs[i]-Sxs[i]*Bys[i])
     #Vector T Hub
-        Txh.append(Szh[i]*By[i]-Syh[i]*Bz[i])
-        Tyh.append(Sxh[i]*Bz[i]-Szh[i]*Bx[i])
-        Tzh.append(Syh[i]*Bx[i]-Sxh[i]*By[i])
+        Txh.append(Szh[i]*Byh[i]-Syh[i]*Bzh[i])
+        Tyh.append(Sxh[i]*Bzh[i]-Szh[i]*Bxh[i])
+        Tzh.append(Syh[i]*Bxh[i]-Sxh[i]*Byh[i])
 
     outputdict=dict()
     for i in ('Txs','Tys','Tzs','Txh','Tyh','Tzh'):
@@ -1848,7 +1941,7 @@ def VectorComp(indict): # INPUT => X,Y,Z,Xh,Yh,Zh
 def Coord3D(indict,tb4,tb5): # INPUT =>Txs,Tys,Tzs,Txh,Tyh,Tzh,tb4,tb5
     # global XcorS,YcorS,ZcorS,XcorH,YcorH,ZcorH
     global XcorSP,YcorSP,ZcorSP,XcorSN,YcorSN,ZcorSN,XcorHP,YcorHP,ZcorHP,XcorHN,YcorHN,ZcorHN
-    locals().update(indict)
+    globals().update(indict)
     #Tebal Sudu
     tb =[]
     tb.append(tb4)

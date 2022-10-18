@@ -1,4 +1,4 @@
-
+from time import sleep
 from ifrturbinepackage.definitions  import *
 from ifrturbinepackage.inputs       import *
 from ifrturbinepackage.rotor        import *
@@ -2275,9 +2275,10 @@ def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
         global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow,h4s,h04s
         global r4,r5,rs5,rh5,b4,b5,Zr,NR,tb4,tb5
         global C4,Ct4,Cm4,W4,U4,Alpha4,Beta4,C5,Ct5,Cm5,W5,U5,Alpha5,Beta5,Beta4opt,Beta4opt2
-        global Cm5didconverge1,Cm5didconverge2,k1Cm5,k2Cm5,errorC5
+        global Cm5didconverge1,Cm5didconverge2,k1Cm5,k2Cm5,errorC5,Ma4s,rpm
         global TotalLoss,LossInc,LossInc0,LossPass,LossTip,LossWind,LossTE,LossExit,S5,O5,Effreductbladeloading
         global Effts,Efftt,Efftspred,Reaction,vNu
+        global Beta4,Beta5,b4,r4,Zr,rs5,rh5
 
         mflow   = mflows
 
@@ -2347,13 +2348,16 @@ def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
         Cm4     = U4*flow_coeff
         Ct4     = DeltaH/U4                 # => DeltaH = U4*Ct4-U5*Ct5 ; Alpha5=0 => Ct5=0
         C4      = np.sqrt(Cm4**2+Ct4**2)
-        Alpha4  = np.arctan(Ct4/Cm4)
+        Alpha4  = np.arctan(Ct4/Cm4) 
         W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
         Beta4   = np.arctan((U4-Ct4)/Cm4)
 
         h4s    = h04s-1/2*C4**2
         rho4s   = Props('D','H',h4s,'S',s04s,fluid)
         rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
+        a4      = Props('A','H',h4s,'S',s04s,fluid)
+        Ma4s    = C4/a4
+
 
 
         Ct5 = 0 # => it is predetermined that Alpha5=0
@@ -2452,11 +2456,11 @@ def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
         rho04   = Props('D','P',p04,'T',T04,fluid)
         rho4    = Props('D','P',p4,'H',h04,fluid)
         rho4m   = 2*(p04-p4)/C4**2
-        a01     = Props('A','P',p01,'T',T01,fluid)
-        a4s     = Props('A','P',p4s,'T',T4s,fluid)
-        a4      = Props('A','P',p4,'T',T4,fluid)
-        Ma4s    = C4/a4s
-        Ma4     = C4/a4
+        # a01     = Props('A','P',p01,'T',T01,fluid)
+        # a4s     = Props('A','P',p4s,'T',T4s,fluid)
+        # a4      = Props('A','P',p4,'T',T4,fluid)
+        # Ma4s    = C4/a4s
+        # Ma4     = C4/a4
         T5ss    = Props('T','H',h5ss,'S',s05ss,fluid)
         p5ss    = Props('P','H',h5ss,'S',s05ss,fluid)
 
@@ -2554,22 +2558,26 @@ def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
         effdict     = dict()
         lossdict    = dict()
         proceeddict = dict()
-        tesdict     = dict()
+        inputdict     = dict()
 
         for i in ('r4','r5','rs5','rh5','b4','b5','Zr','NR','tb4','tb5'):
             geomdict[i]     = globals()[i]
         for i in ('T_1','T_5','P_1','P_5','p04s','p04','p4s','p4','p5ss','p5','p05ss','p05','T05ss','T05','T5ss','T5','rho4s','rho5ss','mflow','h4s','h04s'):
             thermodict[i]   = globals()[i]
-        for i in ('C4','Ct4','Cm4','W4','U4','Alpha4','Beta4','C5','Ct5','Cm5','W5','U5','Alpha5','Beta5','Beta4opt','Beta4opt2','Cm5didconverge1','Cm5didconverge2','k1Cm5','k2Cm5'):
+        for i in ('C4','Ct4','Cm4','W4','U4','Alpha4','Beta4','C5','Ct5','Cm5','W5','U5','Alpha5','Beta5','Beta4opt','Beta4opt2','Cm5didconverge1','Cm5didconverge2','k1Cm5','k2Cm5','Ma4s'):
             veltridict[i]   = globals()[i]
-        for i in ('Reaction','Effts','Efftt'):
+        for i in ('Reaction','Effts','Efftt','rpm'):
             effdict[i]      = globals()[i]
         for i in ('LossInc0','LossInc','LossPass','LossTip','LossWind','LossTE','Effreductbladeloading','LossExit'):
             lossdict[i]     = globals()[i]
-        for i in ('Beta4','Beta5','b4','r4','Zr','rs5','rh5'):
+        for i in ('Beta4','Beta5','b4','r4','Zr','rs5','rh5','r5','b5','tb4','tb5',\
+            'Cm4','U4','Ct4'):
             proceeddict[i]  = globals()[i]
-        tesdict['rpm'] = rpm
-
+        # for i in ('mflows','coeffs','gparams'):
+            # inputdict       = locals()[i]
+        inputdict['mflows'] = mflows
+        inputdict['coeffs'] = coeffs
+        inputdict['gparams']= gparams
         outputdict  = {
             'geometry'  : geomdict,
             'thermo'    : thermodict,
@@ -2577,7 +2585,7 @@ def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
             'efficiency': effdict,
             'losses'    : lossdict,
             'proceed'   : proceeddict,
-            'tes'       : tesdict
+            'input'     : inputdict
             }
 
         return outputdict
@@ -2585,12 +2593,12 @@ def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
         return 0
 
 
-def main():
+def optimizeR(cyclenum):
     global  tenflow_coeff,tenwork_coeff,\
             Rr5r4,Rb5b4,Rb4r4,RZrr4,NR, \
             mflow,T_1,P_1,T_5,P_5    
     ''' initial '''
-    cyclenum        = 11
+    # cyclenum        = 10
     cycledict       = whichcycle (cyclenum)    
     globals().update(cycledict)
     tenflow_coeff   = 1.2       # initial 1.2 range(0.8,)
@@ -2623,12 +2631,22 @@ def main():
         # coeffssol   = GetCoeffs() # gparamssol['gparams']
 
     optresult = ComputeR4all(mflows=mflowsol['mflow'],coeffs=coeffssol['coeffs'],gparams=gparamssol['gparams'])
-    print(f"Optimized result for cycle {cyclenum} :")
-    for i in optresult:
-        print(i)
-        print(optresult[i])
-        
+    askprint = str(input("Do you want to print optimized result? [Y/N]: "))
+    if askprint.upper() == 'Y' or askprint.upper() == 'YES':
+        print(f"Optimized result for cycle {cyclenum} :")
+        for i in optresult:
+            print(i)
+            print(optresult[i])
+    
+    for i in range(7):
+        print(f"\x1b[2KCounting down...({7-i}s)",end="\r")
+        sleep(1)
+
+    return optresult['proceed']
+    
+    
+
     # print(coeffssol)
     # print(gparamssol['gparams'][1])
     # print((gparamssol['gparams']))
-main()
+# optimizeR(10)

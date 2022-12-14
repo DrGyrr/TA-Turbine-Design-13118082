@@ -1,0 +1,143 @@
+# Copyright (c) 1993-2009 Microsoft Corp.
+#
+# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.
+#
+# This file contains the mappings of IP addresses to host names. Each
+# entry should be kept on an individual line. The IP address should
+# be placed in the first column followed by the corresponding host name.
+# The IP address and the host name should be separated by at least one
+# space.
+#
+# Additionally, comments (such as these) may be inserted on individual
+# lines or following the machine name denoted by a '#' symbol.
+#
+# For example:
+#
+#      102.54.94.97     rhino.acme.com          # source server
+#       38.25.63.10     x.acme.com              # x client host
+
+# localhost name resolution is handled within DNS itself.
+#	127.0.0.1       localhost
+#	::1             localhost
+151.101.129.140   	i.redditmedia.com 
+52.34.230.181     	www.reddithelp.com 
+151.101.65.140    	g.redditmedia.com 
+151.101.65.140    	a.thumbs.redditmedia.com 
+151.101.1.140     	redditgifts.com 
+151.101.1.140     	i.redd.it 
+151.101.1.140     	old.reddit.com 
+151.101.1.140     	new.reddit.com 
+151.101.129.140  	reddit.com 
+151.101.129.140   	gateway.reddit.com 
+151.101.129.140   	oauth.reddit.com 
+151.101.129.140   	sendbird.reddit.com 
+151.101.129.140   	v.redd.it 
+151.101.1.140     	b.thumbs.redditmedia.com 
+151.101.1.140     	events.reddit.com 
+54.210.123.98     	stats.redditmedia.com 
+151.101.65.140    	www.redditstatic.com 
+151.101.193.140   	www.reddit.com 
+52.3.23.26        	pixel.redditmedia.com 
+151.101.65.140    	www.redditmedia.com 
+151.101.193.140   	about.reddit.com 
+52.203.76.9       	out.reddit.com
+109.201.133.27	  	mail.rarbg.to					
+109.201.133.27	  	ns2.rarbg.to						
+109.201.133.27    	ns1.rarbg.to						
+151.80.120.114    	8.rarbg.to							
+151.80.120.114	  	7.rarbg.to							
+151.80.120.114    	4.rarbg.to						
+151.80.120.114    	3.rarbg.to						
+151.80.120.114    	1.rarbg.to						
+151.80.120.114    	5.rarbg.to						
+151.80.120.114    	2.rarbg.to						
+151.80.120.114    	6.rarbg.to						
+151.80.120.115    	9.rarbg.to						
+185.37.100.119    	ns3.rarbg.to	
+185.37.100.122	  	rarbg.to
+185.37.100.122	  	www.rarbg.to
+104.21.59.138     	rarbgaccess.org
+172.67.178.114    	www.rarbgaccess.org
+162.159.137.6	  	thepiratebay.org
+162.159.137.6	  	m.thepiratebay.org
+162.159.137.6	  	www.thepiratebay.org
+104.21.9.48		  	1337x.to
+172.67.141.188	  	cdn.1337x.to
+172.67.141.188	  	chat.1337x.to
+172.67.141.188	  	www.1337x.to
+104.22.33.168	  	kickasstorrents.to
+104.22.33.168	  	www.kickasstorrents.to
+104.21.233.145	  	yts.am
+104.21.233.145	  	www.yts.am
+104.21.233.145	  	img.yts.am
+104.26.6.75		  	yts.mx
+104.26.6.75		  	www.yts.mx
+212.8.242.150	  	img.yts.mx
+46.105.102.174	  	addic7ed.com
+46.105.102.174		staff.addic7ed.com
+46.105.102.174		test.addic7ed.com
+46.105.102.174		sandbox.addic7ed.com
+46.105.102.174		ftp.addic7ed.com
+46.105.102.174		www.addic7ed.com
+46.105.102.174		blog.addic7ed.com
+46.105.102.174		smtp.addic7ed.com
+68.178.252.133		e.addic7ed.com
+72.167.218.183		webmail.addic7ed.com	
+94.23.9.195			www2.addic7ed.com
+94.23.9.195			cdn.addic7ed.com
+142.250.185.83		calendar.addic7ed.com
+142.250.185.83		sites.addic7ed.com
+142.250.185.83		docs.addic7ed.com
+172.217.12.211		mail.addic7ed.com
+173.201.193.5		email.addic7ed.com
+173.201.193.5		pop.addic7ed.com
+104.27.206.92		subscene.com
+104.27.206.92		api.subscene.com
+104.27.206.92		a.subscene.com
+104.27.206.92		forum.subscene.com
+104.27.206.92		u.subscene.com
+104.27.206.92		c.subscene.com
+104.27.206.92		www.subscene.com
+104.27.206.92		mail.subscene.com
+0.0.0.0 			mc.corel.com
+0.0.0.0 			apps.corel.com
+0.0.0.0 			origin-mc.corel.com
+0.0.0.0 			iws.corel.com
+0.0.0.0 			compute-1.amazonaws.com  
+0.0.0.0	 			ipm.corel.com  
+0.0.0.0 			dev1.ipm.corel.public.corel.net 
+127.0.0.1 			mc.corel.com
+127.0.0.1			apps.corel.com
+127.0.0.1 			origin-mc.corel.com
+127.0.0.1 			iws.corel.com
+127.0.0.1 			compute-1.amazonaws.com  
+127.0.0.1 			ipm.corel.com  
+127.0.0.1 			dev1.ipm.corel.public.corel.net 
+93.191.156.121		coffeenavigated.net
+103.7.12.208		bimasislam.kemenag.go.id
+103.7.13.242		dev.bimasislam.kemenag.go.id
+103.74.143.78 		kkpbandung.kemkes.go.id
+67.199.248.11 		bit.ly
+104.21.91.135 		www.komatunpar.com
+104.21.91.135 		admin.komatunpar.com
+104.21.91.135		old.komatunpar.com
+139.59.194.54		app.komatunpar.com
+139.59.194.54 		dev.komatunpar.com
+172.67.220.234 		komatunpar.com
+151.101.56.193		www.imgur.com
+202.65.121.164		https://lms2.smumuhi-yog.sch.id/
+144.76.146.247		www.q-blade.org
+144.76.146.247		q-blade.org
+5.9.149.79			mail.q-blade.org
+185.26.104.247		sci-hub.do
+185.26.104.247		www.sci-hub.do
+104.22.44.68		cdn1.mangaclash.com
+172.67.29.253		cdn.mangaclash.com
+104.22.44.68		www.mangaclash.com
+185.224.137.20		birukarya.com
+198.252.98.56		www.dev47apps.com
+167.205.21.74		si.ftmd.itb.ac.id
+114.6.2.132			booking.indosatooredoo.com
+75.126.101.240		www.fotorx.co
+104.22.68.246		www.truepeoplesearch.com
+114.7.94.149          www.indosatooredoo.com

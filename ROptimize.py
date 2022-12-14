@@ -87,7 +87,30 @@ def ComputeR4varg(x:list) -> 'Effts':
         rho4s   = Props('D','H',h4s,'S',s04s,fluid)
         rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
 
+        initr4guess=0.045 # => initial guess r4 = 4.5cm
+        r40     = initr4guess
+        r4      = 0.04  # => set asal untuk memulai loop
+        while np.abs(r40-r4)/r40 > 0.01 # residual/error harus lebih kecil dari 1%
+            r40     = r4
+            if 0.04*r4>0.001:
+                tb4 = 0.04*r4
+            else:
+                tb4 = 0.001
+            Bk4     = (tb4*NR)/(2*np.pi*r40*np.cos(Beta4))
+            r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
 
+        angvel  = U4/r4
+        rpm     = angvel*(60/(2*np.pi))
+        r5      = Rr5r4*r4
+        b4      = Rb4r4*r4
+        b5      = Rb5b4*b4
+        rs5     = (2*r5+b5)/2
+        rh5     = rs5-b5
+
+        if 0.02*r4>0.001:
+            tb5 = 0.02*r4
+        else:
+            tb5 = 0.001
         Ct5 = 0 # => it is predetermined that Alpha5=0
         Alpha5 = 0
         Cm5_0    = 0
@@ -103,7 +126,10 @@ def ComputeR4varg(x:list) -> 'Effts':
             k1Cm5       = k1Cm5+1             # => iteration amount
             Cm5i        = Cm5ii
             rho5ssi      = rho5ssii
-            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
+
+            
+            Bk5     = (tb5*NR)/(2*np.pi*r5*np.cos(Beta4))
+            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*(1-Bk4)/(1-Bk5) *Cm4
             # Cm4ii       = mflow/(2*np.pi()*b5*)
             h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
             rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
@@ -124,7 +150,7 @@ def ComputeR4varg(x:list) -> 'Effts':
                 break
         while Cm5didconverge2 == False:
             k2Cm5     = k2Cm5 +1         # => iteration amount
-            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
+            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4 # -_- -_- -_-
             h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
             rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
             if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
@@ -140,21 +166,15 @@ def ComputeR4varg(x:list) -> 'Effts':
         h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
         C5      = np.sqrt(Cm5**2+Ct5**2)
         U5      = U4*Rr5r4
-        W5      = np.sqrt(Cm5**2+(U5-Ct5)**2)
+        W5       = np.sqrt(Cm5**2+(U5-Ct5)**2)
         Beta5   = np.arccos(Cm5/W5)
 
 
 
         #Perhitungan geometri
         # r4      = U4/np.radians(rpm*6)
-        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
-        angvel  = U4/r4
-        rpm     = angvel*(60/(2*np.pi))
-        r5      = Rr5r4*r4
-        b4      = Rb4r4*r4
-        b5      = Rb5b4*b4
-        rs5     = (2*r5+b5)/2
-        rh5     = rs5-b5
+        
+
         # if rh5 < 0.0015:
         #     print(f"For flow coeff ={flow_coeff} and work coeff={work_coeff} rh5 too small(<1.5mm), adjust gparams")
         
@@ -248,15 +268,9 @@ def ComputeR4varg(x:list) -> 'Effts':
         LossWind = Kf*((rho4s+rho5ss)/2)*U4**3*r4**2/(2*mflow*W5**2)
 
         #Trailing Edge Losses
-        if 0.04*r4>0.001:
-            tb4 = 0.04*r4
-        else:
-            tb4 = 0.001
 
-        if 0.02*r4>0.001:
-            tb5 = 0.02*r4
-        else:
-            tb5 = 0.001
+
+        
         LossTE = rho5ss*W5**2/2*(NR*tb5/(np.pi*(rh5+rs5)*np.cos(Beta5)))**2
 
         #Exit Losses
@@ -2268,7 +2282,7 @@ def GetMFlow(gparams,coeffs):
     return outputdict
 
 
-def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
+def ComputeR4all(cyclenum,mflows,coeffs:list,gparams:list) -> 'Effts':
 
     try:
         
@@ -2279,6 +2293,9 @@ def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
         global TotalLoss,LossInc,LossInc0,LossPass,LossTip,LossWind,LossTE,LossExit,S5,O5,Effreductbladeloading
         global Effts,Efftt,Efftspred,Reaction,vNu
         global Beta4,Beta5,b4,r4,Zr,rs5,rh5
+
+        cycledict=whichcycle (cyclenum)       # The cycle to be computed
+        globals().update(cycledict)
 
         mflow   = mflows
 
@@ -2573,6 +2590,7 @@ def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
         for i in ('Beta4','Beta5','b4','r4','Zr','rs5','rh5','r5','b5','tb4','tb5',\
             'Cm4','U4','Ct4'):
             proceeddict[i]  = globals()[i]
+        tonozzlelist        = NR,r4,Alpha4,b4,Ct4,rho4,mflow
         # for i in ('mflows','coeffs','gparams'):
             # inputdict       = locals()[i]
         inputdict['mflows'] = mflows
@@ -2585,6 +2603,7 @@ def ComputeR4all(mflows,coeffs:list,gparams:list) -> 'Effts':
             'efficiency': effdict,
             'losses'    : lossdict,
             'proceed'   : proceeddict,
+            'tonozzle'    : tonozzlelist,
             'input'     : inputdict
             }
 

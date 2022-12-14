@@ -3,8 +3,10 @@ from CoolProp.CoolProp import PropsSI as Props
 import numpy as np
 from ifrturbinepackage.rotor import *
 
-def VariableNozz(): # INPUT => NR,r4,Alpha4,b4,Ct4,rho4,mflow
+def VariableNozz(NR,r4,Alpha4,b4,Ct4,rho4s,mflow): # INPUT => NR,r4,Alpha4,b4,Ct4,rho4,mflow
   global aOc,Betha2,Nn,r3,Ct3,Cm3,r2Or3,r2,s3,o3,Alpha3,t2Oc,t3Oc,tmaxOc,dOc
+  
+  rho4=rho4s
   aOc = 0.3               #Varopt
   Betha2=np.radians(21)   #Varopt
   Nn = NR + 1             #Varopt
@@ -20,9 +22,10 @@ def VariableNozz(): # INPUT => NR,r4,Alpha4,b4,Ct4,rho4,mflow
   t3Oc = 0.015    #Varopt
   tmaxOc = 0.06   #Varopt
   dOc = 0.4       #Varopt
+  return(Betha2,Nn,r3,Ct3,Cm3,r2,s3,o3,Alpha3,t2Oc,t3Oc,tmaxOc,dOc)
 # OUTPUT => return(Betha2,Nn,r3,Ct3,Cm3,r2,s3,o3,Alpha3,t2Oc,t3Oc,tmaxOc,dOc)
  
-def NozzCalc1(): # INPUT => ai,bi,ci
+def NozzCalc1(ai,bi,ci): # INPUT => ai,bi,ci
   #Variabel Desain
   global Y03,Tetha,Y2
   #Kalkulasi Y03
@@ -31,9 +34,10 @@ def NozzCalc1(): # INPUT => ai,bi,ci
   Tetha=X2+X3
   Y2=Betha2+X2
   Y03=r2/r3*np.cos(Y2)
+  return Y03
 # OUTPUT => return (Y03)
        
-def NozzCalc2(): # INPUT => ai,bi,ci
+def NozzCalc2(ai,bi,ci): # INPUT => ai,bi,ci
   global a,b,c,Errora,Errorb,Errorc
   Y3=np.arccos(Y03)
   c=(r2-r3)/np.sin(Y3)
@@ -42,6 +46,7 @@ def NozzCalc2(): # INPUT => ai,bi,ci
   Errora=(ai-a)
   Errorb=(bi-b)
   Errorc=(ci-c)
+  return (a,b,c,Errora,Errorb,Errorc)
 # OUTPUT => return(a,b,c,Errora,Errorb,Errorc)  
 
 def VariantSearchNozz():
@@ -57,7 +62,7 @@ def VariantSearchNozz():
             bi=np.abs(np.random.uniform(0.1,0.8)*o3)
             ci=np.abs(np.random.uniform(0,5,1)*(r3-r2))  
             ai=ci*aOc
-            Y03=NozzCalc1(ai,bi,ci)[0]
+            Y03=NozzCalc1(ai,bi,ci)
             if Y03<=1:
                 break
         ListNozzCalc1=NozzCalc2(ai,bi,ci)
@@ -80,7 +85,7 @@ def VariantSearchNozz():
         # print(ErrorList)
     return(SListA,SListB,SListC,ErrorList)
 
-def CheckValNozz(): # INPUT => anew,bnew,cnew
+def CheckValNozz(anew,bnew,cnew): # INPUT => anew,bnew,cnew
   X2=np.arctan(4*bnew/(4*anew-cnew))
   X3=np.arctan(4*bnew/(3*cnew-4*anew))
   Tetha=X2+X3
@@ -94,11 +99,12 @@ def CheckValNozz(): # INPUT => anew,bnew,cnew
   Errorb=(bnew-b)
   Errorc=(cnew-c)
   Errorxnoz=abs(Errora)+abs(Errorb)+abs(Errorc)
+  return (anew,bnew,cnew,Errorxnoz,X2,X3,Y2,Y3)
 # OUTPUT => return (anew,bnew,cnew,Errorxnoz,X2,X3,Y2,Y3)
 
 
 #Menggambar 3D Nozzle
-def nozzleconts(): # INPUT => a,b,c,t2Oc,t3Oc,dOc
+def nozzleconts(a,b,c,t2Oc,t3Oc,dOc): # INPUT => a,b,c,t2Oc,t3Oc,dOc
   t2=c*t2Oc
   t3=c*t3Oc
   tmax=c*tmaxOc
@@ -152,6 +158,7 @@ def nozzleconts(): # INPUT => a,b,c,t2Oc,t3Oc,dOc
   print(Xc)
   print()
   print(Xa)
+  return (Xa,Xb,Ya,Yb)
 #OUTPUT => return(Xa,Xb,Ya,Yb)
 
 def proceedN(savenumber):

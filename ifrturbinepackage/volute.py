@@ -7,7 +7,7 @@ from ifrturbinepackage.nozzle import *
 def ComputeV(): # INPUT => fluid,r2,r3,Cm3,Betha2,H_1,T_1,P_1,mflow
     Cm2=r2/r3*Cm3
     Ct2=Cm2/np.tan(np.radians(Betha2))
-    AR=1.2
+    AR=1
     Vaneless=0.002
     vB=0.001
     vA=AR*vB

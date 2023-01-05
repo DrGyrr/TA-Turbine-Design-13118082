@@ -90,13 +90,13 @@ def ComputeR4varg(x:list) -> 'Effts':
         initr4guess=0.045 # => initial guess r4 = 4.5cm
         r40     = initr4guess
         r4      = 0.04  # => set asal untuk memulai loop
-        while np.abs(r40-r4)/r40 > 0.01 # residual/error harus lebih kecil dari 1%
+        while np.abs(r40-r4)/r40 > 0.005: # residual/error harus lebih kecil dari 0.5%
             r40     = r4
             if 0.04*r4>0.001:
                 tb4 = 0.04*r4
             else:
                 tb4 = 0.001
-            Bk4     = (tb4*NR)/(2*np.pi*r40*np.cos(Beta4))
+            Bk4     = (tb4*NR*0.05)/(2*np.pi*r40*np.cos(Beta4))
             r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
 
         angvel  = U4/r4
@@ -111,9 +111,10 @@ def ComputeR4varg(x:list) -> 'Effts':
             tb5 = 0.02*r4
         else:
             tb5 = 0.001
+
         Ct5 = 0 # => it is predetermined that Alpha5=0
         Alpha5 = 0
-        Cm5_0    = 0
+        Cm5_0    = 10
         rho5ss_0= rho05ss        # => initial value for iteration
         Cm5ii    = Cm5_0
         rho5ssii= rho5ss_0
@@ -127,13 +128,17 @@ def ComputeR4varg(x:list) -> 'Effts':
             Cm5i        = Cm5ii
             rho5ssi      = rho5ssii
 
-            
-            Bk5     = (tb5*NR)/(2*np.pi*r5*np.cos(Beta4))
+            C5      = np.sqrt(Cm5i**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5      = np.sqrt(Cm5i**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5i/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
             Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*(1-Bk4)/(1-Bk5) *Cm4
             # Cm4ii       = mflow/(2*np.pi()*b5*)
             h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
             rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
+            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
             if errorCm5 <= 5*1e-3:
                 Cm5didconverge1 = True
@@ -150,13 +155,21 @@ def ComputeR4varg(x:list) -> 'Effts':
                 break
         while Cm5didconverge2 == False:
             k2Cm5     = k2Cm5 +1         # => iteration amount
-            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4 # -_- -_- -_-
+
+            C5      = np.sqrt(Cm5**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5       = np.sqrt(Cm5**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
+
+            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*(1-Bk4)/(1-Bk5) *Cm4 # -_- -_- -_-
             h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
             rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
             if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
                 choked5 = True
                 break
-            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
+            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             if errorCm5 <= 5*1e-5:
                 Cm5didconverge2 = True
                 break
@@ -412,10 +425,34 @@ def ComputeR4vargd(x:list) -> dict :
         rho4s   = Props('D','H',h4s,'S',s04s,fluid)
         rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
 
+        initr4guess=0.045 # => initial guess r4 = 4.5cm
+        r40     = initr4guess
+        r4      = 0.04  # => set asal untuk memulai loop
+        while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+            r40     = r4
+            if 0.04*r4>0.001:
+                tb4 = 0.04*r4
+            else:
+                tb4 = 0.001
+            Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+            r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
+
+        angvel  = U4/r4
+        rpm     = angvel*(60/(2*np.pi))
+        r5      = Rr5r4*r4
+        b4      = Rb4r4*r4
+        b5      = Rb5b4*b4
+        rs5     = (2*r5+b5)/2
+        rh5     = rs5-b5
+
+        if 0.02*r4>0.001:
+            tb5 = 0.02*r4
+        else:
+            tb5 = 0.001
 
         Ct5 = 0 # => it is predetermined that Alpha5=0
         Alpha5 = 0
-        Cm5_0    = 0
+        Cm5_0    = 10
         rho5ss_0= rho05ss        # => initial value for iteration
         Cm5ii    = Cm5_0
         rho5ssii= rho5ss_0
@@ -428,11 +465,18 @@ def ComputeR4vargd(x:list) -> dict :
             k1Cm5       = k1Cm5+1             # => iteration amount
             Cm5i        = Cm5ii
             rho5ssi      = rho5ssii
-            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
+
+            C5      = np.sqrt(Cm5i**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5      = np.sqrt(Cm5i**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5i/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
+            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*(1-Bk4)/(1-Bk5) *Cm4
             # Cm4ii       = mflow/(2*np.pi()*b5*)
             h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
             rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
+            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
             if errorCm5 <= 5*1e-3:
                 Cm5didconverge1 = True
@@ -449,13 +493,21 @@ def ComputeR4vargd(x:list) -> dict :
                 break
         while Cm5didconverge2 == False:
             k2Cm5     = k2Cm5 +1         # => iteration amount
-            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
+            
+            C5      = np.sqrt(Cm5**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5       = np.sqrt(Cm5**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
+
+            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*(1-Bk4)/(1-Bk5) *Cm4 # -_- -_- -_-
             h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
             rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
             if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
                 choked5 = True
                 break
-            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
+            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             if errorCm5 <= 5*1e-5:
                 Cm5didconverge2 = True
                 break
@@ -472,16 +524,16 @@ def ComputeR4vargd(x:list) -> dict :
 
         #Perhitungan geometri
         # r4      = U4/np.radians(rpm*6)
-        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
-        angvel  = U4/r4
-        rpm     = angvel*(60/(2*np.pi))
-        r5      = Rr5r4*r4
-        b4      = Rb4r4*r4
-        b5      = Rb5b4*b4
-        rs5     = (2*r5+b5)/2
-        rh5     = rs5-b5
-        if rh5 < 0.0015:
-            print(f"For flow coeff ={flow_coeff} and work coeff={work_coeff} rh5 too small(<1.5mm), adjust gparams")
+        # r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+        # angvel  = U4/r4
+        # rpm     = angvel*(60/(2*np.pi))
+        # r5      = Rr5r4*r4
+        # b4      = Rb4r4*r4
+        # b5      = Rb5b4*b4
+        # rs5     = (2*r5+b5)/2
+        # rh5     = rs5-b5
+        # if rh5 < 0.0015:
+        #     print(f"For flow coeff ={flow_coeff} and work coeff={work_coeff} rh5 too small(<1.5mm), adjust gparams")
         
         Zr      = RZrr4*r4
 
@@ -700,6 +752,7 @@ def rh5constrvarg(x:list):
     T05ss   = T_5
     h05ss   = H_5
     s05ss   = s04s
+
     #Segitiga Kecepatan Inlet, m/s, radians
     U4      = np.sqrt(DeltaH/work_coeff)
     Cm4     = U4*flow_coeff
@@ -708,66 +761,22 @@ def rh5constrvarg(x:list):
     Alpha4  = np.arctan(Ct4/Cm4)
     W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
     Beta4   = np.arctan((U4-Ct4)/Cm4)
+
     h4s    = h04s-1/2*C4**2
     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
     rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
-    Ct5 = 0 # => it is predetermined that Alpha5=0
-    Alpha5 = 0
-    Cm5_0    = 0
-    rho5ss_0= rho05ss        # => initial value for iteration
-    Cm5ii    = Cm5_0
-    rho5ssii= rho5ss_0
-    Cm5didconverge1 = False
-    Cm5didconverge2 = False
-    choked5     = False
-    k1Cm5    = 0
-    k2Cm5    = 0
-    while Cm5didconverge1 == False:
-        k1Cm5       = k1Cm5+1             # => iteration amount
-        Cm5i        = Cm5ii
-        rho5ssi      = rho5ssii
-        Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
-        # Cm4ii       = mflow/(2*np.pi()*b5*)
-        h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
-        rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
-        # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
-        if errorCm5 <= 5*1e-3:
-            Cm5didconverge1 = True
-            Cm5didconverge2 = True
-            Cm5     = Cm5ii
-            rho5ss   = rho5ssii
-            break
-        if (rho5ssi*Cm5i-rho5ssii*Cm5ii)*(Cm5i-Cm5ii)<0:
-            Cm5      = Cm5ii
-            rho5ss  = rho5ssii
-            break
-        if k1Cm5>200:
-            print(f"loop1 iterates too long ({k1Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    while Cm5didconverge2 == False:
-        k2Cm5     = k2Cm5 +1         # => iteration amount
-        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
-        h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
-        rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
-        if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
-            choked5 = True
-            break
-        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
-        if errorCm5 <= 5*1e-5:
-            Cm5didconverge2 = True
-            break
-        if k2Cm5>200:
-            print(f"loop2 iterates too long ({k1Cm5},{k2Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
-    C5      = np.sqrt(Cm5**2+Ct5**2)
-    U5      = U4*Rr5r4
-    W5      = np.sqrt(Cm5**2+(U5-Ct5)**2)
-    Beta5   = np.arccos(Cm5/W5)
-    #Perhitungan geometri
-    # r4      = U4/np.radians(rpm*6)
-    r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+
+    initr4guess=0.045 # => initial guess r4 = 4.5cm
+    r40     = initr4guess
+    r4      = 0.04  # => set asal untuk memulai loop
+    while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+        r40     = r4
+        if 0.04*r4>0.001:
+            tb4 = 0.04*r4
+        else:
+            tb4 = 0.001
+        Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
     angvel  = U4/r4
     rpm     = angvel*(60/(2*np.pi))
     r5      = Rr5r4*r4
@@ -775,7 +784,13 @@ def rh5constrvarg(x:list):
     b5      = Rb5b4*b4
     rs5     = (2*r5+b5)/2
     rh5     = rs5-b5
-    return rh5-0.004
+    if 0.02*r4>0.001:
+        tb5 = 0.02*r4
+    else:
+        tb5 = 0.001
+
+
+    return rh5-0.0075
 
 def rs5constrvarg(x:list):
     global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow,h4s,h04s
@@ -842,72 +857,34 @@ def rs5constrvarg(x:list):
     Alpha4  = np.arctan(Ct4/Cm4)
     W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
     Beta4   = np.arctan((U4-Ct4)/Cm4)
+
     h4s    = h04s-1/2*C4**2
     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
     rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
-    Ct5 = 0 # => it is predetermined that Alpha5=0
-    Alpha5 = 0
-    Cm5_0    = 0
-    rho5ss_0= rho05ss        # => initial value for iteration
-    Cm5ii    = Cm5_0
-    rho5ssii= rho5ss_0
-    Cm5didconverge1 = False
-    Cm5didconverge2 = False
-    choked5     = False
-    k1Cm5    = 0
-    k2Cm5    = 0
-    while Cm5didconverge1 == False:
-        k1Cm5       = k1Cm5+1             # => iteration amount
-        Cm5i        = Cm5ii
-        rho5ssi      = rho5ssii
-        Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
-        # Cm4ii       = mflow/(2*np.pi()*b5*)
-        h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
-        rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
-        # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
-        if errorCm5 <= 5*1e-3:
-            Cm5didconverge1 = True
-            Cm5didconverge2 = True
-            Cm5     = Cm5ii
-            rho5ss   = rho5ssii
-            break
-        if (rho5ssi*Cm5i-rho5ssii*Cm5ii)*(Cm5i-Cm5ii)<0:
-            Cm5      = Cm5ii
-            rho5ss  = rho5ssii
-            break
-        if k1Cm5>200:
-            print(f"loop1 iterates too long ({k1Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    while Cm5didconverge2 == False:
-        k2Cm5     = k2Cm5 +1         # => iteration amount
-        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
-        h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
-        rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
-        if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
-            choked5 = True
-            break
-        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
-        if errorCm5 <= 5*1e-5:
-            Cm5didconverge2 = True
-            break
-        if k2Cm5>200:
-            print(f"loop2 iterates too long ({k1Cm5},{k2Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
-    C5      = np.sqrt(Cm5**2+Ct5**2)
-    U5      = U4*Rr5r4
-    W5      = np.sqrt(Cm5**2+(U5-Ct5)**2)
-    Beta5   = np.arccos(Cm5/W5)
-    #Perhitungan geometri
-    # r4      = U4/np.radians(rpm*6)
-    r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+
+    initr4guess=0.045 # => initial guess r4 = 4.5cm
+    r40     = initr4guess
+    r4      = 0.04  # => set asal untuk memulai loop
+    while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+        r40     = r4
+        if 0.04*r4>0.001:
+            tb4 = 0.04*r4
+        else:
+            tb4 = 0.001
+        Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
     angvel  = U4/r4
     rpm     = angvel*(60/(2*np.pi))
     r5      = Rr5r4*r4
     b4      = Rb4r4*r4
     b5      = Rb5b4*b4
     rs5     = (2*r5+b5)/2
+    rh5     = rs5-b5
+    if 0.02*r4>0.001:
+        tb5 = 0.02*r4
+    else:
+        tb5 = 0.001
+
     return (r4-rs5)/r4-0.2
 
 def GetGParams(coeffs,mflows): #tenflow_coeff,tenwork_coeff
@@ -917,11 +894,11 @@ def GetGParams(coeffs,mflows): #tenflow_coeff,tenwork_coeff
     tenwork_coeff = coeffs [1]
     mflow    = mflows
     
-    Rr5r4b   = (0.2,0.4)
-    Rb5b4b   = (1,5)
-    Rb4r4b   = (0.05,0.5)
+    Rr5r4b   = (0.15,0.4)
+    Rb5b4b   = (1,10)
+    Rb4r4b   = (0.09,0.3)
     RZrr4b   = (0.75,1.4)
-    NRb      = (11,17)
+    NRb      = (10,17)
 
     bnds        = (Rr5r4b,Rb5b4b,Rb4r4b,RZrr4b,NRb)
     constrrh5   = {'type': 'ineq', 'fun':rh5constrvarg}
@@ -1014,10 +991,35 @@ def ComputeR4vart(x:list) -> 'Effts':
         rho4s   = Props('D','H',h4s,'S',s04s,fluid)
         rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
 
+        initr4guess=0.045 # => initial guess r4 = 4.5cm
+        r40     = initr4guess
+        r4      = 0.04  # => set asal untuk memulai loop
+        while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+            r40     = r4
+            if 0.04*r4>0.001:
+                tb4 = 0.04*r4
+            else:
+                tb4 = 0.001
+            Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+            r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
+
+        angvel  = U4/r4
+        rpm     = angvel*(60/(2*np.pi))
+        r5      = Rr5r4*r4
+        b4      = Rb4r4*r4
+        b5      = Rb5b4*b4
+        rs5     = (2*r5+b5)/2
+        rh5     = rs5-b5
+
+        if 0.02*r4>0.001:
+            tb5 = 0.02*r4
+        else:
+            tb5 = 0.001
+
 
         Ct5 = 0 # => it is predetermined that Alpha5=0
         Alpha5 = 0
-        Cm5_0    = 0
+        Cm5_0    = 10
         rho5ss_0= rho05ss        # => initial value for iteration
         Cm5ii    = Cm5_0
         rho5ssii= rho5ss_0
@@ -1030,11 +1032,18 @@ def ComputeR4vart(x:list) -> 'Effts':
             k1Cm5       = k1Cm5+1             # => iteration amount
             Cm5i        = Cm5ii
             rho5ssi      = rho5ssii
-            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
+            
+            C5      = np.sqrt(Cm5i**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5      = np.sqrt(Cm5i**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5i/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
+            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*(1-Bk4)/(1-Bk5) *Cm4
             # Cm4ii       = mflow/(2*np.pi()*b5*)
             h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
             rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
+            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
             if errorCm5 <= 5*1e-3:
                 Cm5didconverge1 = True
@@ -1051,13 +1060,21 @@ def ComputeR4vart(x:list) -> 'Effts':
                 break
         while Cm5didconverge2 == False:
             k2Cm5     = k2Cm5 +1         # => iteration amount
-            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
+            
+            C5      = np.sqrt(Cm5**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5       = np.sqrt(Cm5**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
+
+            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*(1-Bk4)/(1-Bk5) *Cm4 # -_- -_- -_-
             h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
             rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
             if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
                 choked5 = True
                 break
-            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
+            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             if errorCm5 <= 5*1e-5:
                 Cm5didconverge2 = True
                 break
@@ -1074,16 +1091,16 @@ def ComputeR4vart(x:list) -> 'Effts':
 
         #Perhitungan geometri
         # r4      = U4/np.radians(rpm*6)
-        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
-        angvel  = U4/r4
-        rpm     = angvel*(60/(2*np.pi))
-        r5      = Rr5r4*r4
-        b4      = Rb4r4*r4
-        b5      = Rb5b4*b4
-        rs5     = (2*r5+b5)/2
-        rh5     = rs5-b5
-        if rh5 < 0.0015:
-            print(f"For flow coeff ={flow_coeff} and work coeff={work_coeff} rh5 too small(<1.5mm), adjust gparams")
+        # r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+        # angvel  = U4/r4
+        # rpm     = angvel*(60/(2*np.pi))
+        # r5      = Rr5r4*r4
+        # b4      = Rb4r4*r4
+        # b5      = Rb5b4*b4
+        # rs5     = (2*r5+b5)/2
+        # rh5     = rs5-b5
+        # if rh5 < 0.0015:
+        #     print(f"For flow coeff ={flow_coeff} and work coeff={work_coeff} rh5 too small(<1.5mm), adjust gparams")
         
         Zr      = RZrr4*r4
 
@@ -1301,6 +1318,7 @@ def rh5constrvart(x:list):
     T05ss   = T_5
     h05ss   = H_5
     s05ss   = s04s
+
     #Segitiga Kecepatan Inlet, m/s, radians
     U4      = np.sqrt(DeltaH/work_coeff)
     Cm4     = U4*flow_coeff
@@ -1309,66 +1327,22 @@ def rh5constrvart(x:list):
     Alpha4  = np.arctan(Ct4/Cm4)
     W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
     Beta4   = np.arctan((U4-Ct4)/Cm4)
+
     h4s    = h04s-1/2*C4**2
     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
     rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
-    Ct5 = 0 # => it is predetermined that Alpha5=0
-    Alpha5 = 0
-    Cm5_0    = 0
-    rho5ss_0= rho05ss        # => initial value for iteration
-    Cm5ii    = Cm5_0
-    rho5ssii= rho5ss_0
-    Cm5didconverge1 = False
-    Cm5didconverge2 = False
-    choked5     = False
-    k1Cm5    = 0
-    k2Cm5    = 0
-    while Cm5didconverge1 == False:
-        k1Cm5       = k1Cm5+1             # => iteration amount
-        Cm5i        = Cm5ii
-        rho5ssi      = rho5ssii
-        Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
-        # Cm4ii       = mflow/(2*np.pi()*b5*)
-        h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
-        rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
-        # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
-        if errorCm5 <= 5*1e-3:
-            Cm5didconverge1 = True
-            Cm5didconverge2 = True
-            Cm5     = Cm5ii
-            rho5ss   = rho5ssii
-            break
-        if (rho5ssi*Cm5i-rho5ssii*Cm5ii)*(Cm5i-Cm5ii)<0:
-            Cm5      = Cm5ii
-            rho5ss  = rho5ssii
-            break
-        if k1Cm5>200:
-            print(f"loop1 iterates too long ({k1Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    while Cm5didconverge2 == False:
-        k2Cm5     = k2Cm5 +1         # => iteration amount
-        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
-        h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
-        rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
-        if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
-            choked5 = True
-            break
-        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
-        if errorCm5 <= 5*1e-5:
-            Cm5didconverge2 = True
-            break
-        if k2Cm5>200:
-            print(f"loop2 iterates too long ({k1Cm5},{k2Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
-    C5      = np.sqrt(Cm5**2+Ct5**2)
-    U5      = U4*Rr5r4
-    W5      = np.sqrt(Cm5**2+(U5-Ct5)**2)
-    Beta5   = np.arccos(Cm5/W5)
-    #Perhitungan geometri
-    # r4      = U4/np.radians(rpm*6)
-    r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+    
+    initr4guess=0.045 # => initial guess r4 = 4.5cm
+    r40     = initr4guess
+    r4      = 0.04  # => set asal untuk memulai loop
+    while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+        r40     = r4
+        if 0.04*r4>0.001:
+            tb4 = 0.04*r4
+        else:
+            tb4 = 0.001
+        Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
     angvel  = U4/r4
     rpm     = angvel*(60/(2*np.pi))
     r5      = Rr5r4*r4
@@ -1376,7 +1350,12 @@ def rh5constrvart(x:list):
     b5      = Rb5b4*b4
     rs5     = (2*r5+b5)/2
     rh5     = rs5-b5
-    return rh5-0.004
+    if 0.02*r4>0.001:
+        tb5 = 0.02*r4
+    else:
+        tb5 = 0.001
+    
+    return rh5-0.0075
 
 def rs5constrvart(x:list):
     global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow,h4s,h04s
@@ -1434,6 +1413,7 @@ def rs5constrvart(x:list):
     T05ss   = T_5
     h05ss   = H_5
     s05ss   = s04s
+
     #Segitiga Kecepatan Inlet, m/s, radians
     U4      = np.sqrt(DeltaH/work_coeff)
     Cm4     = U4*flow_coeff
@@ -1442,72 +1422,34 @@ def rs5constrvart(x:list):
     Alpha4  = np.arctan(Ct4/Cm4)
     W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
     Beta4   = np.arctan((U4-Ct4)/Cm4)
+
     h4s    = h04s-1/2*C4**2
     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
     rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
-    Ct5 = 0 # => it is predetermined that Alpha5=0
-    Alpha5 = 0
-    Cm5_0    = 0
-    rho5ss_0= rho05ss        # => initial value for iteration
-    Cm5ii    = Cm5_0
-    rho5ssii= rho5ss_0
-    Cm5didconverge1 = False
-    Cm5didconverge2 = False
-    choked5     = False
-    k1Cm5    = 0
-    k2Cm5    = 0
-    while Cm5didconverge1 == False:
-        k1Cm5       = k1Cm5+1             # => iteration amount
-        Cm5i        = Cm5ii
-        rho5ssi      = rho5ssii
-        Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
-        # Cm4ii       = mflow/(2*np.pi()*b5*)
-        h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
-        rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
-        # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
-        if errorCm5 <= 5*1e-3:
-            Cm5didconverge1 = True
-            Cm5didconverge2 = True
-            Cm5     = Cm5ii
-            rho5ss   = rho5ssii
-            break
-        if (rho5ssi*Cm5i-rho5ssii*Cm5ii)*(Cm5i-Cm5ii)<0:
-            Cm5      = Cm5ii
-            rho5ss  = rho5ssii
-            break
-        if k1Cm5>200:
-            print(f"loop1 iterates too long ({k1Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    while Cm5didconverge2 == False:
-        k2Cm5     = k2Cm5 +1         # => iteration amount
-        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
-        h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
-        rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
-        if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
-            choked5 = True
-            break
-        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
-        if errorCm5 <= 5*1e-5:
-            Cm5didconverge2 = True
-            break
-        if k2Cm5>200:
-            print(f"loop2 iterates too long ({k1Cm5},{k2Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
-    C5      = np.sqrt(Cm5**2+Ct5**2)
-    U5      = U4*Rr5r4
-    W5      = np.sqrt(Cm5**2+(U5-Ct5)**2)
-    Beta5   = np.arccos(Cm5/W5)
-    #Perhitungan geometri
-    # r4      = U4/np.radians(rpm*6)
-    r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+
+    initr4guess=0.045 # => initial guess r4 = 4.5cm
+    r40     = initr4guess
+    r4      = 0.04  # => set asal untuk memulai loop
+    while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+        r40     = r4
+        if 0.04*r4>0.001:
+            tb4 = 0.04*r4
+        else:
+            tb4 = 0.001
+        Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
     angvel  = U4/r4
     rpm     = angvel*(60/(2*np.pi))
     r5      = Rr5r4*r4
     b4      = Rb4r4*r4
     b5      = Rb5b4*b4
     rs5     = (2*r5+b5)/2
+    rh5     = rs5-b5
+    if 0.02*r4>0.001:
+        tb5 = 0.02*r4
+    else:
+        tb5 = 0.001
+
     return (r4-rs5)/r4-0.2
 
 def sonicconstrvart(x:list):
@@ -1579,6 +1521,69 @@ def sonicconstrvart(x:list):
 
     return (a4-C4)/a4-0.025
 
+def Beta4constrvart(x:list):
+    global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow,h4s,h04s
+    global r4,r5,rs5,rh5,b4,b5,Zr,NR,tb4,tb5
+    global C4,Ct4,Cm4,W4,U4,Alpha4,Beta4,C5,Ct5,Cm5,W5,U5,Alpha5,Beta5,Beta4opt,Beta4opt2
+    global Cm5didconverge1,Cm5didconverge2,k1Cm5,k2Cm5,errorC5
+    global TotalLoss,LossInc,LossInc0,LossPass,LossTip,LossWind,LossTE,LossExit,S5,O5,Effreductbladeloading
+    global Effts,Efftt,Efftspred,Reaction,vNu
+    tenflow_coeff   = x[0]
+    tenwork_coeff   = x[1]
+    flow_coeff=tenflow_coeff/10
+    work_coeff=tenwork_coeff/10
+    # cycledict=whichcycle (cyclenum)       # The cycle to be computed
+    # globals().update(cycledict)
+    # gparamdict=whichgparamset (l)  # geometry parameter set to be used is the l
+    # globals().update(gparamdict)
+    # rpm =whatrpm(m)          # rpm at m will be used
+    # P_1 = P_1*10**6 sudah diubah jadi pa di fungsi whichcycle
+    # P_5 = P_5*10**6
+    Cp4 = Props('C','T',T_1,'P',P_1,fluid)
+    Cv4 = Props('O','T',T_1,'P',P_1,fluid)
+    gamma = Cp4/Cv4
+    Rx = 8.31446261815324   #J/K.mol
+    #General Properties inlet outlet turbin (Total)
+    H_1     = Props('H','T',T_1,'P',P_1,fluid)     #J/kg
+    s01     = Props('S','T',T_1,'P',P_1,fluid)     #J/kg.K 
+    T_5     = Props('T','P',P_5,'S',s01,fluid)  # =>asumsi nozzle isenthalpy DAN Isentropic
+    H_5     = Props('H','T',T_5,'P',P_5,fluid)  # meski pada kenyataannya isenthalpic nozzle tidak isentropic
+    DeltaH  = H_1-H_5            #Ideal === Isentropic Total Enthalpy change 
+    C0s     = np.sqrt(2*DeltaH)         #Spouting Velocity
+    #Perhitungan Properties ideal lain (Total)
+    p01     = P_1           #inlet volute [1], Total
+    T01     = T_1
+    h01     = H_1
+    p1      = p01           # inlet turbine, V~0 
+    T1      = T_1
+    h01     = H_1
+    rho1   = Props('D','P',p1,'T',T1,fluid)
+    h02s    = H_1           #inlet nozzle [2], Total
+    s02s    = s01            #ideal volute === approx. as isentropic
+    p02s    = p01
+    T02s    = T01
+    h03s    = h02s           #outlet nozzle [3], Total
+    s03s    = s02s            #ideal nozzle === approx. as isentropic (in Total)
+    p03s    = p02s
+    T03s    = T02s
+    h04s    = h03s           #inlet rotor [4], Total
+    s04s    = s03s           #outlet nozzle === inlet rotor
+    p04s    = p03s
+    T04s    = T03s
+    h04     = h04s          # Nozzle isenthalpic but not isentropic
+    p05ss   = P_5
+    T05ss   = T_5
+    h05ss   = H_5
+    s05ss   = s04s
+    #Segitiga Kecepatan Inlet, m/s, radians
+    U4      = np.sqrt(DeltaH/work_coeff)
+    Cm4     = U4*flow_coeff
+    Ct4     = DeltaH/U4                 # => DeltaH = U4*Ct4-U5*Ct5 ; Alpha5=0 => Ct5=0
+    C4      = np.sqrt(Cm4**2+Ct4**2)
+    Alpha4  = np.arctan(Ct4/Cm4)
+    W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
+    Beta4   = np.arctan((U4-Ct4)/Cm4)
+    return 70-np.abs(np.degrees(Beta4)) #untuk batasi Beta4, ikuti format: MaxAngle[deg] - abs(deg(Beta4))
 
 def GetCoeffs(gparams,mflows) : # gparams 
     global  Rr5r4,Rb5b4,Rb4r4,RZrr4,NR,\
@@ -1590,14 +1595,15 @@ def GetCoeffs(gparams,mflows) : # gparams
     RZrr4   = gparams[3]
     NR      = gparams[4]
 
-    tenflow_coeffb      = (0.7,5)
-    tenwork_coeffb      = (7,20)
+    tenflow_coeffb      = (0.6,7)
+    tenwork_coeffb      = (7,30)
     bnds                = (tenflow_coeffb,tenwork_coeffb)
 
     constrrh5   = {'type': 'ineq', 'fun':rh5constrvart}
     constrrs5   = {'type': 'ineq', 'fun':rs5constrvart}
     constrsonic = {'type': 'ineq', 'fun':sonicconstrvart}
-    constr      = [constrrh5,constrrs5,constrsonic]
+    constrbeta4 = {'type': 'ineq', 'fun':Beta4constrvart}
+    constr      = [constrrh5,constrrs5,constrsonic,constrbeta4]
     initval     = [1,15]
 
     opteffts_coeffs = optimize.minimize(ComputeR4vart,initval,method='SLSQP',bounds=bnds,constraints=constr)
@@ -1606,7 +1612,7 @@ def GetCoeffs(gparams,mflows) : # gparams
     return outputdict
 
 
-def ComputeR4varm(x) -> 'Effts':
+def ComputeR4varm(x) -> 'Effts': 
 
     try:
         
@@ -1685,10 +1691,34 @@ def ComputeR4varm(x) -> 'Effts':
         rho4s   = Props('D','H',h4s,'S',s04s,fluid)
         rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
 
+        initr4guess=0.045 # => initial guess r4 = 4.5cm
+        r40     = initr4guess
+        r4      = 0.04  # => set asal untuk memulai loop
+        while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+            r40     = r4
+            if 0.04*r4>0.001:
+                tb4 = 0.04*r4
+            else:
+                tb4 = 0.001
+            Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+            r4      = np.sqrt(mflow/ (2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4)) ) # mflow sebagai input
+
+        angvel  = U4/r4
+        rpm     = angvel*(60/(2*np.pi))
+        r5      = Rr5r4*r4
+        b4      = Rb4r4*r4
+        b5      = Rb5b4*b4
+        rs5     = (2*r5+b5)/2
+        rh5     = rs5-b5
+
+        if 0.02*r4>0.001:
+            tb5 = 0.02*r4
+        else:
+            tb5 = 0.001
 
         Ct5 = 0 # => it is predetermined that Alpha5=0
         Alpha5 = 0
-        Cm5_0    = 0
+        Cm5_0    = 10
         rho5ss_0= rho05ss        # => initial value for iteration
         Cm5ii    = Cm5_0
         rho5ssii= rho5ss_0
@@ -1701,11 +1731,18 @@ def ComputeR4varm(x) -> 'Effts':
             k1Cm5       = k1Cm5+1             # => iteration amount
             Cm5i        = Cm5ii
             rho5ssi      = rho5ssii
-            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
+
+            C5      = np.sqrt(Cm5i**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5      = np.sqrt(Cm5i**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5i/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
+            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*(1-Bk4)/(1-Bk5) *Cm4
             # Cm4ii       = mflow/(2*np.pi()*b5*)
             h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
             rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
+            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
             if errorCm5 <= 5*1e-3:
                 Cm5didconverge1 = True
@@ -1722,13 +1759,21 @@ def ComputeR4varm(x) -> 'Effts':
                 break
         while Cm5didconverge2 == False:
             k2Cm5     = k2Cm5 +1         # => iteration amount
-            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
+            
+            C5      = np.sqrt(Cm5**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5       = np.sqrt(Cm5**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
+
+            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*(1-Bk4)/(1-Bk5) *Cm4 # -_- -_- -_-
             h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
             rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
             if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
                 choked5 = True
                 break
-            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
+            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             if errorCm5 <= 5*1e-5:
                 Cm5didconverge2 = True
                 break
@@ -1745,16 +1790,16 @@ def ComputeR4varm(x) -> 'Effts':
 
         #Perhitungan geometri
         # r4      = U4/np.radians(rpm*6)
-        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
-        angvel  = U4/r4
-        rpm     = angvel*(60/(2*np.pi))
-        r5      = Rr5r4*r4
-        b4      = Rb4r4*r4
-        b5      = Rb5b4*b4
-        rs5     = (2*r5+b5)/2
-        rh5     = rs5-b5
-        if rh5 < 0.0015:
-            print(f"For flow coeff ={flow_coeff} and work coeff={work_coeff} rh5 too small(<1.5mm), adjust gparams")
+        # r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+        # angvel  = U4/r4
+        # rpm     = angvel*(60/(2*np.pi))
+        # r5      = Rr5r4*r4
+        # b4      = Rb4r4*r4
+        # b5      = Rb5b4*b4
+        # rs5     = (2*r5+b5)/2
+        # rh5     = rs5-b5
+        # if rh5 < 0.0015:
+        #     print(f"For flow coeff ={flow_coeff} and work coeff={work_coeff} rh5 too small(<1.5mm), adjust gparams")
         
         Zr      = RZrr4*r4
 
@@ -1979,66 +2024,23 @@ def rh5constrvarm(x):
     Alpha4  = np.arctan(Ct4/Cm4)
     W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
     Beta4   = np.arctan((U4-Ct4)/Cm4)
+
+
     h4s    = h04s-1/2*C4**2
     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
     rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
-    Ct5 = 0 # => it is predetermined that Alpha5=0
-    Alpha5 = 0
-    Cm5_0    = 0
-    rho5ss_0= rho05ss        # => initial value for iteration
-    Cm5ii    = Cm5_0
-    rho5ssii= rho5ss_0
-    Cm5didconverge1 = False
-    Cm5didconverge2 = False
-    choked5     = False
-    k1Cm5    = 0
-    k2Cm5    = 0
-    while Cm5didconverge1 == False:
-        k1Cm5       = k1Cm5+1             # => iteration amount
-        Cm5i        = Cm5ii
-        rho5ssi      = rho5ssii
-        Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
-        # Cm4ii       = mflow/(2*np.pi()*b5*)
-        h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
-        rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
-        # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
-        if errorCm5 <= 5*1e-3:
-            Cm5didconverge1 = True
-            Cm5didconverge2 = True
-            Cm5     = Cm5ii
-            rho5ss   = rho5ssii
-            break
-        if (rho5ssi*Cm5i-rho5ssii*Cm5ii)*(Cm5i-Cm5ii)<0:
-            Cm5      = Cm5ii
-            rho5ss  = rho5ssii
-            break
-        if k1Cm5>200:
-            print(f"loop1 iterates too long ({k1Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    while Cm5didconverge2 == False:
-        k2Cm5     = k2Cm5 +1         # => iteration amount
-        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
-        h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
-        rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
-        if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
-            choked5 = True
-            break
-        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
-        if errorCm5 <= 5*1e-5:
-            Cm5didconverge2 = True
-            break
-        if k2Cm5>200:
-            print(f"loop2 iterates too long ({k1Cm5},{k2Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
-    C5      = np.sqrt(Cm5**2+Ct5**2)
-    U5      = U4*Rr5r4
-    W5      = np.sqrt(Cm5**2+(U5-Ct5)**2)
-    Beta5   = np.arccos(Cm5/W5)
-    #Perhitungan geometri
-    # r4      = U4/np.radians(rpm*6)
-    r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+
+    initr4guess=0.045 # => initial guess r4 = 4.5cm
+    r40     = initr4guess
+    r4      = 0.04  # => set asal untuk memulai loop
+    while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+        r40     = r4
+        if 0.04*r4>0.001:
+            tb4 = 0.04*r4
+        else:
+            tb4 = 0.001
+        Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
     angvel  = U4/r4
     rpm     = angvel*(60/(2*np.pi))
     r5      = Rr5r4*r4
@@ -2046,7 +2048,13 @@ def rh5constrvarm(x):
     b5      = Rb5b4*b4
     rs5     = (2*r5+b5)/2
     rh5     = rs5-b5
-    return rh5-0.004
+    if 0.02*r4>0.001:
+        tb5 = 0.02*r4
+    else:
+        tb5 = 0.001
+
+
+    return rh5-0.0075
 
 def rs5constrvarm(x):
     global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow,h4s,h04s
@@ -2114,69 +2122,30 @@ def rs5constrvarm(x):
     h4s    = h04s-1/2*C4**2
     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
     rho05ss = Props('D','H',h05ss,'S',s05ss,fluid)
-    Ct5 = 0 # => it is predetermined that Alpha5=0
-    Alpha5 = 0
-    Cm5_0    = 0
-    rho5ss_0= rho05ss        # => initial value for iteration
-    Cm5ii    = Cm5_0
-    rho5ssii= rho5ss_0
-    Cm5didconverge1 = False
-    Cm5didconverge2 = False
-    choked5     = False
-    k1Cm5    = 0
-    k2Cm5    = 0
-    while Cm5didconverge1 == False:
-        k1Cm5       = k1Cm5+1             # => iteration amount
-        Cm5i        = Cm5ii
-        rho5ssi      = rho5ssii
-        Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
-        # Cm4ii       = mflow/(2*np.pi()*b5*)
-        h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
-        rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-        errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
-        # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
-        if errorCm5 <= 5*1e-3:
-            Cm5didconverge1 = True
-            Cm5didconverge2 = True
-            Cm5     = Cm5ii
-            rho5ss   = rho5ssii
-            break
-        if (rho5ssi*Cm5i-rho5ssii*Cm5ii)*(Cm5i-Cm5ii)<0:
-            Cm5      = Cm5ii
-            rho5ss  = rho5ssii
-            break
-        if k1Cm5>200:
-            print(f"loop1 iterates too long ({k1Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    while Cm5didconverge2 == False:
-        k2Cm5     = k2Cm5 +1         # => iteration amount
-        Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
-        h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
-        rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
-        if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
-            choked5 = True
-            break
-        errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
-        if errorCm5 <= 5*1e-5:
-            Cm5didconverge2 = True
-            break
-        if k2Cm5>200:
-            print(f"loop2 iterates too long ({k1Cm5},{k2Cm5}) at {flow_coeff,work_coeff} with errorCm5 = {errorCm5}")
-            break
-    h5ss    = h05ss-1/2*(Cm5**2+Ct5**2)
-    C5      = np.sqrt(Cm5**2+Ct5**2)
-    U5      = U4*Rr5r4
-    W5      = np.sqrt(Cm5**2+(U5-Ct5)**2)
-    Beta5   = np.arccos(Cm5/W5)
-    #Perhitungan geometri
-    # r4      = U4/np.radians(rpm*6)
-    r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+    
+    initr4guess=0.045 # => initial guess r4 = 4.5cm
+    r40     = initr4guess
+    r4      = 0.04  # => set asal untuk memulai loop
+    while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+        r40     = r4
+        if 0.04*r4>0.001:
+            tb4 = 0.04*r4
+        else:
+            tb4 = 0.001
+        Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
     angvel  = U4/r4
     rpm     = angvel*(60/(2*np.pi))
     r5      = Rr5r4*r4
     b4      = Rb4r4*r4
     b5      = Rb5b4*b4
     rs5     = (2*r5+b5)/2
+    rh5     = rs5-b5
+    if 0.02*r4>0.001:
+        tb5 = 0.02*r4
+    else:
+        tb5 = 0.001
+    
     return (r4-rs5)/r4-0.2
 
 def sonicconstrvarm(x):
@@ -2375,11 +2344,34 @@ def ComputeR4all(cyclenum,mflows,coeffs:list,gparams:list) -> 'Effts':
         a4      = Props('A','H',h4s,'S',s04s,fluid)
         Ma4s    = C4/a4
 
+        initr4guess=0.045 # => initial guess r4 = 4.5cm
+        r40     = initr4guess
+        r4      = 0.04  # => set asal untuk memulai loop
+        while np.abs(r40-r4)/r40 > 0.01: # residual/error harus lebih kecil dari 1%
+            r40     = r4
+            if 0.04*r4>0.001:
+                tb4 = 0.04*r4
+            else:
+                tb4 = 0.001
+            Bk4     = (tb4*0.05*NR)/(2*np.pi*r40*np.cos(Beta4))
+            r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s*(1-Bk4))) # mflow sebagai input
 
+        angvel  = U4/r4
+        rpm     = angvel*(60/(2*np.pi))
+        r5      = Rr5r4*r4
+        b4      = Rb4r4*r4
+        b5      = Rb5b4*b4
+        rs5     = (2*r5+b5)/2
+        rh5     = rs5-b5
+
+        if 0.02*r4>0.001:
+            tb5 = 0.02*r4
+        else:
+            tb5 = 0.001
 
         Ct5 = 0 # => it is predetermined that Alpha5=0
         Alpha5 = 0
-        Cm5_0    = 0
+        Cm5_0    = 10
         rho5ss_0= rho05ss        # => initial value for iteration
         Cm5ii    = Cm5_0
         rho5ssii= rho5ss_0
@@ -2391,12 +2383,19 @@ def ComputeR4all(cyclenum,mflows,coeffs:list,gparams:list) -> 'Effts':
         while Cm5didconverge1 == False:
             k1Cm5       = k1Cm5+1             # => iteration amount
             Cm5i        = Cm5ii
-            rho5ssi      = rho5ssii
-            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*Cm4
+            rho5ssi     = rho5ssii
+
+            C5      = np.sqrt(Cm5i**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5      = np.sqrt(Cm5i**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5i/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
+            Cm5ii       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ssi)*(1-Bk4)/(1-Bk5) *Cm4
             # Cm4ii       = mflow/(2*np.pi()*b5*)
             h5ss         = h05ss-1/2*(Cm5ii**2+Ct5**2)
             rho5ssii     = Props('D','H',h5ss,'S',s05ss,fluid)
-            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4))-1)
+            errorCm5    = np.abs((Rb5b4*Rr5r4*(rho5ssii/rho4s)*(Cm5ii/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             # errorCm4    = mflow/(rho5ssii*Cm4ii*2*np.pi*b4*r4)-1
             if errorCm5 <= 5*1e-3:
                 Cm5didconverge1 = True
@@ -2413,13 +2412,21 @@ def ComputeR4all(cyclenum,mflows,coeffs:list,gparams:list) -> 'Effts':
                 break
         while Cm5didconverge2 == False:
             k2Cm5     = k2Cm5 +1         # => iteration amount
-            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*Cm4
+            
+            C5      = np.sqrt(Cm5**2+Ct5**2)
+            U5      = U4*Rr5r4
+            W5       = np.sqrt(Cm5**2+(U5-Ct5)**2)
+            Beta5   = np.arccos(Cm5/W5)
+
+            Bk5     = (tb5*0.05*NR)/(2*np.pi*r5*np.cos(Beta5))
+
+            Cm5       = (1/(Rb5b4*Rr5r4))*(rho4s/rho5ss)*(1-Bk4)/(1-Bk5) *Cm4 # -_- -_- -_-
             h5ss       = h05ss-1/2*(Cm5**2+Ct5**2)
             rho5ss     = Props('D','H',h5ss,'S',s05ss,fluid)
             if np.abs(1-Cm5/Props('A','H',h5ss,'S',s05ss,fluid)) < 5*1e-3:
                 choked5 = True
                 break
-            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4))-1)
+            errorCm5  = np.abs((Rb5b4*Rr5r4*(rho5ss/rho4s)*(Cm5/Cm4)*((1-Bk5)/(1-Bk4)))-1)
             if errorCm5 <= 5*1e-5:
                 Cm5didconverge2 = True
                 break
@@ -2436,14 +2443,14 @@ def ComputeR4all(cyclenum,mflows,coeffs:list,gparams:list) -> 'Effts':
 
         #Perhitungan geometri
         # r4      = U4/np.radians(rpm*6)
-        r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
-        angvel  = U4/r4
-        rpm     = angvel*(60/(2*np.pi))
-        r5      = Rr5r4*r4
-        b4      = Rb4r4*r4
-        b5      = Rb5b4*b4
-        rs5     = (2*r5+b5)/2
-        rh5     = rs5-b5
+        # r4      = np.sqrt(mflow/(2*np.pi*Rb4r4*Cm4*rho4s)) # mflow sebagai input
+        # angvel  = U4/r4
+        # rpm     = angvel*(60/(2*np.pi))
+        # r5      = Rr5r4*r4
+        # b4      = Rb4r4*r4
+        # b5      = Rb5b4*b4
+        # rs5     = (2*r5+b5)/2
+        # rh5     = rs5-b5
         # if rh5 < 0.0015:
         #     print(f"For flow coeff ={flow_coeff} and work coeff={work_coeff} rh5 too small(<1.5mm), adjust gparams")
         
@@ -2631,7 +2638,7 @@ def optimizeR(cyclenum):
     print(f"Iteration 0 : Effts = {gparamssol['Effts']*-1} %")
         # coeffsol    = GetCoeffs(gparams=gparamssol['gparams'],mflows=mflow) 
 
-    for i in range(1,5+1):
+    for i in range(1,3+1):
         
         mflowsol    = GetMFlow  (gparams=gparamssol['gparams'], coeffs=coeffssol['coeffs'])
         coeffssol   = GetCoeffs (gparams=gparamssol['gparams'], mflows=mflowsol['mflow'])
@@ -2649,7 +2656,7 @@ def optimizeR(cyclenum):
         # NR      = gparamssol['gparams'][4]
         # coeffssol   = GetCoeffs() # gparamssol['gparams']
 
-    optresult = ComputeR4all(mflows=mflowsol['mflow'],coeffs=coeffssol['coeffs'],gparams=gparamssol['gparams'])
+    optresult = ComputeR4all(cyclenum=cyclenum,mflows=mflowsol['mflow'],coeffs=coeffssol['coeffs'],gparams=gparamssol['gparams'])
     askprint = str(input("Do you want to print optimized result? [Y/N]: "))
     if askprint.upper() == 'Y' or askprint.upper() == 'YES':
         print(f"Optimized result for cycle {cyclenum} :")

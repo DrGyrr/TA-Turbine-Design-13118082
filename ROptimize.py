@@ -245,8 +245,8 @@ def ComputeR4varg(x:list) -> 'Effts':
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(np.abs(Beta4)-np.abs(Beta4opt))))**2  #m2/s2
-        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt))**2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
+        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt2))**2
 
         #Blade loading efficiency (Chen)
         vNu = U4/np.sqrt(2*Cp4*T01*(1-(p5ss/p01)**((gamma-1)/gamma))) #blade/isentropic jet speed ratio
@@ -589,8 +589,8 @@ def ComputeR4vargd(x:list) -> dict :
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(np.abs(Beta4)-np.abs(Beta4opt))))**2  #m2/s2
-        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt))**2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
+        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt2))**2
 
         #Blade loading efficiency (Chen)
         vNu = U4/np.sqrt(2*Cp4*T01*(1-(p5ss/p01)**((gamma-1)/gamma))) #blade/isentropic jet speed ratio
@@ -1156,7 +1156,7 @@ def ComputeR4vart(x:list) -> 'Effts':
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(np.abs(Beta4)-np.abs(Beta4opt))))**2  #m2/s2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
         LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt))**2
 
         #Blade loading efficiency (Chen)
@@ -1519,7 +1519,8 @@ def sonicconstrvart(x:list):
     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
     a4      = Props('A','H',h4s,'S',s04s,fluid)
 
-    return (a4-C4)/a4-0.025
+    # return (a4-C4)/a4-0.025       # batasi subsonic
+    return 2 - C4/a4
 
 def Beta4constrvart(x:list):
     global T_1,T_5,P_1,P_5,p04s,p04,p4s,p4,p05ss,p5ss,p05,p5,T05ss,T05,T5ss,T5,rho4s,rho5ss,mflow,h4s,h04s
@@ -1583,7 +1584,9 @@ def Beta4constrvart(x:list):
     Alpha4  = np.arctan(Ct4/Cm4)
     W4      = np.sqrt(Cm4**2+(U4-Ct4)**2)
     Beta4   = np.arctan((U4-Ct4)/Cm4)
-    return 70-np.abs(np.degrees(Beta4)) #untuk batasi Beta4, ikuti format: MaxAngle[deg] - abs(deg(Beta4))
+    # untuk batasi Beta4, ikuti format: return MaxAngle[deg] - abs(deg(Beta4))
+    # untuk mrnghilangkan batasan Beta4, 
+    return 70-np.abs(np.degrees(Beta4)) 
 
 def GetCoeffs(gparams,mflows) : # gparams 
     global  Rr5r4,Rb5b4,Rb4r4,RZrr4,NR,\
@@ -1595,8 +1598,8 @@ def GetCoeffs(gparams,mflows) : # gparams
     RZrr4   = gparams[3]
     NR      = gparams[4]
 
-    tenflow_coeffb      = (0.6,7)
-    tenwork_coeffb      = (7,30)
+    tenflow_coeffb      = (0.3,15)
+    tenwork_coeffb      = (5,30)
     bnds                = (tenflow_coeffb,tenwork_coeffb)
 
     constrrh5   = {'type': 'ineq', 'fun':rh5constrvart}
@@ -1604,7 +1607,7 @@ def GetCoeffs(gparams,mflows) : # gparams
     constrsonic = {'type': 'ineq', 'fun':sonicconstrvart}
     constrbeta4 = {'type': 'ineq', 'fun':Beta4constrvart}
     constr      = [constrrh5,constrrs5,constrsonic,constrbeta4]
-    initval     = [1,15]
+    initval     = [1.2,15]
 
     opteffts_coeffs = optimize.minimize(ComputeR4vart,initval,method='SLSQP',bounds=bnds,constraints=constr)
 
@@ -1855,8 +1858,8 @@ def ComputeR4varm(x) -> 'Effts':
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(np.abs(Beta4)-np.abs(Beta4opt))))**2  #m2/s2
-        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt))**2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
+        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt2))**2
 
         #Blade loading efficiency (Chen)
         vNu = U4/np.sqrt(2*Cp4*T01*(1-(p5ss/p01)**((gamma-1)/gamma))) #blade/isentropic jet speed ratio
@@ -2216,7 +2219,8 @@ def sonicconstrvarm(x):
     rho4s   = Props('D','H',h4s,'S',s04s,fluid)
     a4      = Props('A','H',h4s,'S',s04s,fluid)
 
-    return (a4-C4)/a4-0.025
+    # return (a4-C4)/a4-0.025       # batasi jadi subsonic
+    return 2 - C4/a4
 
 
 
@@ -2508,8 +2512,8 @@ def ComputeR4all(cyclenum,mflows,coeffs:list,gparams:list) -> 'Effts':
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(np.abs(Beta4)-np.abs(Beta4opt))))**2  #m2/s2
-        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt))**2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
+        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt2))**2
 
         #Blade loading efficiency (Chen)
         vNu = U4/np.sqrt(2*Cp4*T01*(1-(p5ss/p01)**((gamma-1)/gamma))) #blade/isentropic jet speed ratio
@@ -2635,7 +2639,7 @@ def optimizeR(cyclenum):
 
     gparamssol  = GetGParams(coeffs=coeffs,mflows=mflow)
     coeffssol   = GetCoeffs(gparams=gparamssol['gparams'],mflows=mflow)
-    print(f"Iteration 0 : Effts = {gparamssol['Effts']*-1} %")
+    print(f"Iteration 0 : {gparamssol['success']} Effts = {gparamssol['Effts']*-1} %")
         # coeffsol    = GetCoeffs(gparams=gparamssol['gparams'],mflows=mflow) 
 
     for i in range(1,3+1):

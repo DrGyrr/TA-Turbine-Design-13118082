@@ -245,8 +245,8 @@ def ComputeR4varg(x:list) -> 'Effts':
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
-        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt2))**2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-(-30))))**2  #m2/s2
+        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(-30))**2
 
         #Blade loading efficiency (Chen)
         vNu = U4/np.sqrt(2*Cp4*T01*(1-(p5ss/p01)**((gamma-1)/gamma))) #blade/isentropic jet speed ratio
@@ -589,8 +589,8 @@ def ComputeR4vargd(x:list) -> dict :
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
-        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt2))**2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-(-30))))**2  #m2/s2
+        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(-30))**2
 
         #Blade loading efficiency (Chen)
         vNu = U4/np.sqrt(2*Cp4*T01*(1-(p5ss/p01)**((gamma-1)/gamma))) #blade/isentropic jet speed ratio
@@ -1156,8 +1156,8 @@ def ComputeR4vart(x:list) -> 'Effts':
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
-        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt))**2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-(-30))))**2  #m2/s2
+        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(-30))**2
 
         #Blade loading efficiency (Chen)
         vNu = U4/np.sqrt(2*Cp4*T01*(1-(p5ss/p01)**((gamma-1)/gamma))) #blade/isentropic jet speed ratio
@@ -1858,8 +1858,8 @@ def ComputeR4varm(x) -> 'Effts':
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
-        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt2))**2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-(-30))))**2  #m2/s2
+        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(-30))**2
 
         #Blade loading efficiency (Chen)
         vNu = U4/np.sqrt(2*Cp4*T01*(1-(p5ss/p01)**((gamma-1)/gamma))) #blade/isentropic jet speed ratio
@@ -2512,8 +2512,8 @@ def ComputeR4all(cyclenum,mflows,coeffs:list,gparams:list) -> 'Effts':
         #Rotor Incidence Losses 
         Beta4opt2= np.arctan((-1.98/NR)/(1-1.98/NR)*np.tan(Alpha4))
         Beta4opt = np.arctan(np.tan(Alpha4)*(work_coeff-1+2/NR)/work_coeff)  #(Chen)
-        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-Beta4opt2)))**2  #m2/s2
-        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(Beta4opt2))**2
+        LossInc0 = 0.5*(W4**2)*(np.sin(np.abs(Beta4-(-30))))**2  #m2/s2
+        LossInc  = 0.5*(W4**2)*(np.sin(Beta4)-np.sin(-30))**2
 
         #Blade loading efficiency (Chen)
         vNu = U4/np.sqrt(2*Cp4*T01*(1-(p5ss/p01)**((gamma-1)/gamma))) #blade/isentropic jet speed ratio

@@ -48,3 +48,4 @@ def calculate(u):
 
                                         
 # calculate(initializeu(maxiter,ni=platelength,nj=platewidth))
+# test
